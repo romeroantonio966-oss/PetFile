@@ -28,6 +28,11 @@ service cloud.firestore {
         allow read: if signedIn() && me() == uid;
         allow write: if false;
       }
+
+      // Teléfonos con notificaciones activadas (cada persona solo los suyos).
+      match /push/{pushId} {
+        allow read, write: if signedIn() && me() == uid;
+      }
     }
 
     match /invites/{code} {
@@ -81,6 +86,16 @@ service cloud.firestore {
       match /pets/{petId} {
         allow read: if isMember(fid);
         allow create, update, delete: if isMember(fid);
+      }
+
+      // Recetas: datos y miniatura en "recetas"; la foto completa aparte, en "recetasImg".
+      match /recetas/{rid} {
+        allow read, delete: if isMember(fid);
+        allow create, update: if isMember(fid) && request.resource.data.thumb.size() < 120000;
+      }
+      match /recetasImg/{rid} {
+        allow read, delete: if isMember(fid);
+        allow create, update: if isMember(fid) && request.resource.data.img.size() < 950000;
       }
     }
   }

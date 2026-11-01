@@ -5,8 +5,12 @@
 
 [build.environment]
   # La clave web de Firebase es pública por diseño (la seguridad está en las reglas de Firestore).
-  SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = "AIzaSyD3pbEsREXAQPUZ1ogYQY66OTeeZVvjc5c"
+  SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = "AIzaSyD3pbEsREXAQPUZ1ogYQY66OTeeZVvjc5c,BGIa1D38q4A-mle4ubKlSc9A1d2RhETRFZyfrmA9mvRADgdIZnHb1PG3i8Q6o-4MfviRKPF0IrHwApiD40SYlwk"
 
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = ["firebase-admin"]
+  external_node_modules = ["firebase-admin", "web-push"]
+
+# Notificaciones: revisa cada hora qué avisar (resumen a las 7:00 de cada persona y citas 1 hora antes).
+[functions."send-reminders"]
+  schedule = "0 * * * *"

@@ -252,6 +252,23 @@ body.signed-out .iconbtn{display:none}
 .keybox{border:1px dashed var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
 .keybox b{font-size:15px}
 .keybox input{flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:11px;padding:9px 11px;font-family:var(--f-mono);font-size:14px;color:var(--ink)}
+.rclock{display:grid;grid-template-columns:38px 1fr;gap:12px;align-items:center;text-align:left;width:100%;background:var(--surface);border:1px dashed var(--line);border-radius:18px;padding:14px}
+.rclock b{display:block;font-size:15px;margin-bottom:2px}.rclock span>span,.rclock>span:last-child{font-size:13.5px;color:var(--muted)}
+.rclock b{color:var(--ink)}
+.rcgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.rcitem{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:0;overflow:hidden;text-align:left;display:flex;flex-direction:column}
+.rcitem img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:var(--accent-soft)}
+.rcitem span{padding:7px 8px;display:flex;flex-direction:column;min-width:0}
+.rcitem b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rcitem small{font-size:11px;color:var(--muted)}
+.rcadd{align-items:center;justify-content:center;gap:6px;border-style:dashed;min-height:120px;color:var(--accent)}
+.rcadd b{font-size:28px;font-family:var(--f-display)}
+.rcpick{display:flex;gap:14px;align-items:center}
+.rcprev{width:84px;height:112px;border-radius:14px;background:var(--accent-soft);display:grid;place-items:center;color:var(--accent);overflow:hidden;flex:none}
+.rcprev svg{width:30px;height:30px}.rcprev img{width:100%;height:100%;object-fit:cover}
+.rcbig{border-radius:16px;overflow:hidden;background:var(--bg);border:1px solid var(--line);min-height:200px;display:grid;place-items:center}
+.rcbig img{width:100%;display:block}
+.ntcard{display:grid;grid-template-columns:38px 1fr;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;text-align:left}
+.ntcard b{font-size:15px}.ntok{color:var(--ok);font-weight:700;font-size:13.5px}
 .fab{width:58px;height:58px;border-radius:20px;border:0;background:var(--ink);color:var(--bg);display:grid;place-items:center;margin-top:-26px;box-shadow:0 8px 20px rgba(0,0,0,.22)}
 .fab svg{width:28px;height:28px}
 
@@ -769,7 +786,7 @@ function accountSheet(){
   ${L.status!=='paid'?keyBox():''}
   ${famCard()}
   ${own?`<div style="display:flex;flex-direction:column;gap:6px"><span class="label">${t('ac_id')}</span><div style="display:flex;gap:8px;align-items:center"><div class="idbox" style="flex:1">${esc(fb.famId||u.uid)}</div><button class="btn sm ghost" data-act="copy-uid">${t('ac_copy')}</button></div><span class="muted" style="font-size:12.5px">${t('ac_idHint')}</span></div>`:''}
-  ${feedbackCard()}<button class="btn ghost block" data-act="logout">${t('ac_logout')}</button>${arcaBadge()}`);
+  ${typeof notifCard==='function'?notifCard():''}${feedbackCard()}<button class="btn ghost block" data-act="logout">${t('ac_logout')}</button>${arcaBadge()}`);
 }
 function lockView(){
   const own=isFamOwner();
@@ -947,6 +964,141 @@ document.addEventListener('click',ev=>{
   else if(a==='fb-star'){ev.stopImmediatePropagation();const n=+el.dataset.v;fbDraft.stars=fbDraft.stars===n?0:n;document.querySelectorAll('.stars button').forEach(b=>{const v=+b.dataset.v;b.classList.toggle('on',v<=fbDraft.stars);b.setAttribute('aria-checked',v===fbDraft.stars)})}
 },true);
 
+/* ---------- recetas con foto y notificaciones (Premium) ---------- */
+const VAPID_PUBLIC="BGIa1D38q4A-mle4ubKlSc9A1d2RhETRFZyfrmA9mvRADgdIZnHb1PG3i8Q6o-4MfviRKPF0IrHwApiD40SYlwk";
+Object.assign(S.es,{
+  rc_t:'Recetas',rc_add:'+ Agregar',rc_lockT:'Guardá las recetas del veterinario',rc_lockD:'Tomale foto a cada receta y tenela siempre a mano en la ficha de tu mascota.',rc_empty:'Todavía no hay recetas. Tomale foto a la próxima receta del veterinario y queda guardada aquí.',
+  rc_new:'Nueva receta',rc_date:'Fecha',rc_photo:'Foto de la receta',rc_take:'Tomar o elegir foto',rc_change:'Cambiar foto',rc_title:'Motivo',rc_titlePh:'Ej. Otitis, control anual',rc_def:'Receta',rc_errPhoto:'Agregá la foto de la receta.',rc_saving:'Guardando…',rc_saved:'Receta guardada',rc_del:'Eliminar receta',rc_delQ:'¿Eliminar esta receta? No se puede deshacer.',rc_deleted:'Receta eliminada',rc_big:'Tocá y mantené la imagen para guardarla o compartirla.',rc_loadErr:'No se pudo cargar la imagen.',
+  pick_rc:'Foto de una receta',pick_rc_d:'Queda guardada en la ficha',
+  nt_t:'Notificaciones',nt_d:'Te avisamos en el celular cada mañana lo que toca hoy y mañana, y una hora antes de cada cita.',nt_on:'Activar notificaciones',nt_off:'Desactivar',nt_onOk:'Notificaciones activadas en este teléfono',nt_offOk:'Notificaciones desactivadas',nt_active:'Activas en este teléfono',nt_denied:'Las notificaciones están bloqueadas. Activalas en los ajustes del teléfono para PETFILE.',nt_install:'Para recibir notificaciones en iPhone, primero instalá PETFILE en la pantalla de inicio y abrila desde el ícono.',nt_unsup:'Este navegador no permite notificaciones. Probá con Chrome en Android o instalando la app en iPhone.',nt_err:'No se pudo activar. Intentá de nuevo.',nt_test:'¡Listo! Así se van a ver los avisos de PETFILE.',nt_howInstall:'Cómo instalarla',
+  prem_rc:'Guardar recetas con foto es Premium.',prem_nt:'Las notificaciones en el celular son Premium.'
+});
+Object.assign(S.en,{
+  rc_t:'Prescriptions',rc_add:'+ Add',rc_lockT:"Keep your vet's prescriptions",rc_lockD:"Snap each prescription and keep it handy in your pet's file.",rc_empty:"No prescriptions yet. Snap the next one from your vet and it's saved here.",
+  rc_new:'New prescription',rc_date:'Date',rc_photo:'Prescription photo',rc_take:'Take or choose photo',rc_change:'Change photo',rc_title:'Reason',rc_titlePh:'e.g. Ear infection, annual checkup',rc_def:'Prescription',rc_errPhoto:'Add the prescription photo.',rc_saving:'Saving…',rc_saved:'Prescription saved',rc_del:'Delete prescription',rc_delQ:"Delete this prescription? This can't be undone.",rc_deleted:'Prescription deleted',rc_big:'Touch and hold the image to save or share it.',rc_loadErr:"Couldn't load the image.",
+  pick_rc:'Prescription photo',pick_rc_d:'Saved in the pet file',
+  nt_t:'Notifications',nt_d:"Every morning we tell you what's due today and tomorrow, and remind you an hour before each appointment.",nt_on:'Turn on notifications',nt_off:'Turn off',nt_onOk:'Notifications on for this phone',nt_offOk:'Notifications off',nt_active:'On for this phone',nt_denied:"Notifications are blocked. Turn them on for PETFILE in your phone's settings.",nt_install:'To get notifications on iPhone, first add PETFILE to your Home Screen and open it from the icon.',nt_unsup:"This browser doesn't support notifications. Try Chrome on Android or install the app on iPhone.",nt_err:"Couldn't turn them on. Try again.",nt_test:"Done! This is how PETFILE reminders will look.",nt_howInstall:'How to install',
+  prem_rc:'Saving prescription photos is Premium.',prem_nt:'Phone notifications are Premium.'
+});
+// Lista Premium actualizada
+S.es.prem_list=['Mascotas sin límite (la versión gratis permite 2)','Foto de perfil de cada mascota','Todas las especies: conejo, ave y otras','Macho castrado y hembra castrada','Fecha de nacimiento con edad automática','Medicamentos y tratamientos','Recetas guardadas con foto','Notificaciones en el celular','Recordatorios en el calendario del teléfono','Invitar a tu familia (hasta 6 personas)'];
+S.en.prem_list=['Unlimited pets (the free version allows 2)','Profile photo for each pet','Every species: rabbit, bird and more','Neutered male and spayed female','Date of birth with automatic age','Medications and treatments','Prescription photos saved','Phone notifications','Reminders in your phone calendar','Invite your family (up to 6 people)'];
+// Ayuda: recetas y notificaciones
+{const i=S.es.help.findIndex(h=>h[1]==='Agenda y recordatorios');
+ S.es.help.splice(i,0,['scan','Recetas','Siempre a mano',['En la ficha de la mascota, en la sección <b>Recetas</b>, tocá <b>+ Agregar</b> (o el botón <span class="kbd">+</span> → <b>Foto de una receta</b>).','Tomale foto a la receta o elegila de la galería.','Escribí el motivo, la fecha y el veterinario, y tocá <b>Guardar</b>.','Para verla en grande, tocá la receta. Manteniendo el dedo sobre la imagen la podés guardar o compartir.'],'Guardar recetas es parte de Premium.']);
+ S.es.help.splice(i+2,0,['cal','Notificaciones en el celular','Que te avise solo',['En iPhone, primero instalá PETFILE en la pantalla de inicio y abrila desde el ícono. En Android funciona desde Chrome.','Entrá a <b>Agenda</b> o a <b>Mi cuenta</b> y tocá <b>Activar notificaciones</b>. Aceptá el permiso que pide el teléfono.','Cada mañana te llega lo que toca hoy y mañana, y una hora antes de cada cita.','Se activan en cada teléfono por separado: cada persona de la familia las activa en el suyo.'],'Las notificaciones son parte de Premium.']);}
+{const i=S.en.help.findIndex(h=>h[1]==='Schedule and reminders');
+ S.en.help.splice(i,0,['scan','Prescriptions','Always at hand',["In the pet's file, under <b>Prescriptions</b>, tap <b>+ Add</b> (or the <span class=\"kbd\">+</span> button → <b>Prescription photo</b>).",'Take a photo of the prescription or pick it from your gallery.','Enter the reason, date and vet, then tap <b>Save</b>.','Tap a prescription to see it full size. Touch and hold the image to save or share it.'],'Saving prescriptions is part of Premium.']);
+ S.en.help.splice(i+2,0,['cal','Phone notifications','Reminders that come to you',['On iPhone, first add PETFILE to your Home Screen and open it from the icon. On Android it works from Chrome.','Go to <b>Schedule</b> or <b>My account</b> and tap <b>Turn on notifications</b>. Accept the permission your phone asks for.',"Every morning you get what's due today and tomorrow, and a reminder an hour before each appointment.",'They are turned on per phone: each family member turns them on on their own phone.'],'Notifications are part of Premium.']);}
+
+/* recetas: datos */
+state.recetas={};
+const _listenFamily=listenFamily;
+listenFamily=function(fid){
+  _listenFamily(fid);state.recetas={};
+  fb.famUnsubs.push(famRef(fid).collection('recetas').onSnapshot(snap=>{const m={};snap.docs.forEach(d=>{m[d.id]=Object.assign({},d.data(),{id:d.id})});state.recetas=m;render()},e=>console.warn(e)));
+};
+const recetasOf=pid=>Object.values(state.recetas).filter(r=>r.petId===pid).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+function recetasSection(p){
+  const list=recetasOf(p.id),prem=isPremium();
+  let s=`<section class="sec"><div class="sec-h"><h2>${t('rc_t')}</h2>${prem?`<button class="lnk" data-act="rc-new" data-pet="${p.id}">${t('rc_add')}</button>`:''}</div>`;
+  if(!prem&&!list.length)return s+`<button class="rclock" data-act="premium" data-why="prem_rc"><span class="ticon" style="--tc:var(--accent)">${I.scan}</span><span><b>${t('rc_lockT')}${PBADGE()}</b>${t('rc_lockD')}</span></button></section>`;
+  if(!list.length)return s+`<button class="rclock" data-act="rc-new" data-pet="${p.id}"><span class="ticon" style="--tc:var(--accent)">${I.scan}</span><span><b>${t('rc_lockT')}</b>${t('rc_empty')}</span></button></section>`;
+  return s+`<div class="rcgrid">${list.map(r=>`<button class="rcitem" data-act="rc-view" data-id="${r.id}"><img src="${r.thumb||''}" alt=""><span><b>${esc(r.title||t('rc_def'))}</b><small>${fmtDate(r.date)}</small></span></button>`).join('')}${prem?'':`<button class="rcitem rcadd" data-act="premium" data-why="prem_rc"><b>+</b>${PBADGE()}</button>`}</div></section>`;
+}
+function compressImage(file,max,q){return new Promise((res,rej)=>{const url=URL.createObjectURL(file);const img=new Image();img.onload=()=>{const k=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',q))};img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('img'))};img.src=url})}
+async function fitImage(file){let max=1600,q=.72,d=await compressImage(file,max,q);while(d.length>850000&&max>700){max-=250;q=Math.max(.5,q-.06);d=await compressImage(file,max,q)}return d}
+let rcDraft=null;
+function recetaForm(p){
+  rcDraft={file:null,preview:null};
+  openSheet(`<div><div class="label">${esc(p.name)}</div><h2>${t('rc_new')}</h2></div><form id="rcform" class="fields" novalidate>
+   <div class="full rcpick"><div id="rc-prev" class="rcprev">${I.scan}</div><label class="btn sm soft" for="rc-file" id="rc-lbl">${t('rc_take')}</label><input id="rc-file" type="file" accept="image/*" hidden></div>
+   <label class="f full">${t('rc_title')}<input id="rc-title" placeholder="${t('rc_titlePh')}" autocomplete="off"></label>
+   <label class="f">${t('rc_date')}<input id="rc-date" type="date" value="${todayStr()}"></label>
+   <label class="f">${t('ef_vet')}<input id="rc-vet" placeholder="${t('ef_vetPh')}"></label>
+   <label class="f full">${t('ef_notes')}<textarea id="rc-notes"></textarea></label>
+   <div id="rc-err" class="full err" hidden></div><button class="btn dark block full" type="submit" id="rc-go">${t('save')}</button></form>`);
+  $('#rc-file').addEventListener('change',async ev=>{const f=ev.target.files[0];if(!f)return;rcDraft.file=f;try{const th=await compressImage(f,360,.7);$('#rc-prev').innerHTML=`<img src="${th}" alt="">`;$('#rc-lbl').textContent=t('rc_change')}catch(e){toast(t('t_imgErr'))}});
+  $('#rcform').addEventListener('submit',async ev=>{ev.preventDefault();const err=$('#rc-err');err.hidden=true;
+    if(!rcDraft.file){err.textContent=t('rc_errPhoto');err.hidden=false;return}
+    const go=$('#rc-go');go.disabled=true;go.innerHTML=`<span class="spinner"></span> ${t('rc_saving')}`;
+    try{const img=await fitImage(rcDraft.file),thumb=await compressImage(rcDraft.file,320,.7);
+      const ref=famRef(fb.famId).collection('recetas').doc();
+      await famRef(fb.famId).collection('recetasImg').doc(ref.id).set({img,petId:p.id});
+      await ref.set({petId:p.id,title:$('#rc-title').value.trim()||t('rc_def'),date:$('#rc-date').value||todayStr(),vet:$('#rc-vet').value.trim(),notes:$('#rc-notes').value.trim(),thumb,createdAt:Date.now()});
+      closeSheet();toast(t('rc_saved'));
+    }catch(e){console.warn(e);err.textContent=e&&e.code==='permission-denied'?t('lic_noWrite'):t('t_cloudErr');err.hidden=false;go.disabled=false;go.textContent=t('save')}});
+}
+async function recetaView(id){
+  const r=state.recetas[id];if(!r)return;const p=state.pets[r.petId]||{};
+  openSheet(`<div><div class="label">${esc(p.name||'')}</div><h2>${esc(r.title||t('rc_def'))}</h2><p class="muted" style="margin:4px 0 0;font-size:14px">${esc([fmtDate(r.date),r.vet].filter(Boolean).join(' · '))}</p></div>
+   <div class="rcbig" id="rc-big"><img src="${r.thumb||''}" alt="" style="filter:blur(4px)"></div><p class="muted" style="margin:0;font-size:12.5px;text-align:center">${t('rc_big')}</p>
+   ${r.notes?`<p style="margin:0;white-space:pre-wrap">${esc(r.notes)}</p>`:''}
+   <div id="rc-delbox"><button class="btn ghost block" style="color:var(--warn)" data-act="rc-ask-del" data-id="${id}">${t('rc_del')}</button></div>`);
+  try{const s=await famRef(fb.famId).collection('recetasImg').doc(id).get();const box=$('#rc-big');if(box&&s.exists)box.innerHTML=`<img src="${s.data().img}" alt="${esc(r.title||'')}">`}catch(e){console.warn(e);const box=$('#rc-big');if(box)box.insertAdjacentHTML('beforeend',`<p class="err">${t('rc_loadErr')}</p>`)}
+}
+async function recetaDelete(id){try{await famRef(fb.famId).collection('recetas').doc(id).delete();await famRef(fb.famId).collection('recetasImg').doc(id).delete();closeSheet();toast(t('rc_deleted'))}catch(e){console.warn(e);toast(t('t_cloudErr'))}}
+const recetaPickerBtn=p=>isPremium()?`<button class="wide" data-act="rc-new" data-pet="${p.id}"><span class="ticon">${I.scan}</span><span>${t('pick_rc')}<small>${t('pick_rc_d')}</small></span></button>`
+  :`<button class="wide lockedt" data-act="premium" data-into="tp-prem" data-why="prem_rc"><span class="ticon">${I.scan}</span><span>${t('pick_rc')}${PBADGE()}<small>${t('pick_rc_d')}</small></span></button>`;
+
+/* notificaciones */
+const nt={state:'checking'};
+const isIOS=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+function b64u(s){const p='='.repeat((4-s.length%4)%4);const b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(b,c=>c.charCodeAt(0))}
+const subId=sub=>btoa(sub.endpoint).replace(/[^A-Za-z0-9]/g,'').slice(-60);
+async function ntCheck(){
+  try{
+    if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){nt.state=isIOS()&&!isStandalone()?'install':'unsup';return}
+    if(Notification.permission==='denied'){nt.state='denied';return}
+    const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();
+    nt.state=sub&&Notification.permission==='granted'?'on':'off';
+    if(sub&&fb.user)userRef().collection('push').doc(subId(sub)).set({sub:JSON.parse(JSON.stringify(sub)),tz:Intl.DateTimeFormat().resolvedOptions().timeZone||'America/Costa_Rica',lang,updatedAt:Date.now()},{merge:true}).catch(()=>{});
+  }catch(e){nt.state='unsup'}
+}
+function notifCard(compact){
+  if(!fb.user||nt.state==='checking')return'';
+  if(compact&&nt.state==='on')return'';
+  const prem=isPremium();
+  let body,act='';
+  if(nt.state==='on'){body=`<span class="ntok">● ${t('nt_active')}</span>`;act=`<button class="btn sm ghost" data-act="nt-off">${t('nt_off')}</button>`}
+  else if(nt.state==='install'){body=`<span class="muted" style="font-size:13px">${t('nt_install')}</span>`;act=`<button class="btn sm ghost" data-act="install">${t('nt_howInstall')}</button>`}
+  else if(nt.state==='denied'){body=`<span class="muted" style="font-size:13px">${t('nt_denied')}</span>`}
+  else if(nt.state==='unsup'){body=`<span class="muted" style="font-size:13px">${t('nt_unsup')}</span>`}
+  else {body=`<span class="muted" style="font-size:13px">${t('nt_d')}</span>`;act=prem?`<button class="btn sm dark" data-act="nt-on">${t('nt_on')}</button>`:`<button class="btn sm dark" data-act="premium" data-why="prem_nt">${t('nt_on')}${PBADGE()}</button>`}
+  return `<div class="ntcard"><span class="ticon" style="--tc:var(--accent)">${I.cal}</span><div style="min-width:0;display:flex;flex-direction:column;gap:4px"><b>${t('nt_t')}</b>${body}${act?`<div>${act}</div>`:''}</div></div>`;
+}
+async function ntOn(btn){
+  if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner"></span>'}
+  try{
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){nt.state=perm==='denied'?'denied':'off';render();refreshSheet();return}
+    const reg=await navigator.serviceWorker.ready;
+    const sub=(await reg.pushManager.getSubscription())||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUBLIC)});
+    await userRef().collection('push').doc(subId(sub)).set({sub:JSON.parse(JSON.stringify(sub)),tz:Intl.DateTimeFormat().resolvedOptions().timeZone||'America/Costa_Rica',lang,createdAt:Date.now()});
+    nt.state='on';toast(t('nt_onOk'));
+    try{reg.showNotification('PETFILE',{body:t('nt_test'),icon:'icon-192.png',badge:'icon-192.png',tag:'petfile-test'})}catch(e){}
+  }catch(e){console.warn(e);toast(t('nt_err'))}
+  render();refreshSheet();
+}
+async function ntOff(){
+  try{const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();if(sub){await userRef().collection('push').doc(subId(sub)).delete().catch(()=>{});await sub.unsubscribe()}nt.state='off';toast(t('nt_offOk'))}catch(e){console.warn(e)}
+  render();refreshSheet();
+}
+function refreshSheet(){const s=$('#layer .sheet');if(s&&s.querySelector('.ntcard'))accountSheet()}
+setTimeout(()=>{ntCheck().then(()=>render())},1500);
+
+document.addEventListener('click',ev=>{
+  const el=ev.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;const stop=()=>ev.stopImmediatePropagation();
+  switch(a){
+    case'rc-new':{stop();const p=state.pets[el.dataset.pet]||state.pets[state.view.id];if(!p)break;if(!isPremium()){premiumSheet('prem_rc');break}closeSheet();recetaForm(p);break}
+    case'rc-view':stop();recetaView(el.dataset.id);break;
+    case'rc-ask-del':stop();$('#rc-delbox').innerHTML=`<div class="confirm"><span style="font-size:14px">${t('rc_delQ')}</span><div style="display:flex;gap:8px"><button class="btn sm danger" data-act="rc-del" data-id="${el.dataset.id}">${t('del')}</button><button class="btn sm ghost" data-act="close">${t('cancel')}</button></div></div>`;break;
+    case'rc-del':stop();recetaDelete(el.dataset.id);break;
+    case'nt-on':stop();ntOn(el);break;
+    case'nt-off':stop();ntOff();break;
+  }
+},true);
+
 /* recordatorios */
 function reminders(pets){
   const out=[];
@@ -1026,7 +1178,7 @@ function helpView(){
 }
 function agendaView(){
   const rem=reminders(petsSorted());
-  let s=`<section class="hello"><h1>${t('nav_agenda')}</h1><p>${t('ag_d')}</p></section>`;
+  let s=`<section class="hello"><h1>${t('nav_agenda')}</h1><p>${t('ag_d')}</p></section>`+(typeof notifCard==='function'?notifCard(true):'');
   if(!rem.length)return s+`<div class="empty"><p>${t('ag_empty')}</p></div>`;
   if(state.caps.downloads&&rem.some(r=>r.n>=0))s+=`<button class="btn ghost block" data-act="ics-all">${I.cal.replace('<svg','<svg width="20" height="20"')}${t('ag_ics')}${isPremium()?'':PBADGE()}</button>`;
   [[t('g_late'),r=>r.n<0],[t('g_week'),r=>r.n>=0&&r.n<=7],[t('g_month'),r=>r.n>7&&r.n<=31],[t('g_later'),r=>r.n>31]].forEach(([ti,f])=>{const g=rem.filter(f);if(g.length)s+=`<section class="sec"><div class="group-t">${ti}</div><div class="list">${g.map(r=>remRow(r,true)).join('')}</div></section>`});
@@ -1042,6 +1194,7 @@ function petView(p){
   <div class="cap"><h1>${esc(p.name)}</h1><div class="sub">${esc(spL(p.species))}</div></div></section>
   <div class="facts"><div class="fact"><span class="label">${t('f_age')}</span><span class="v">${ageOf(p.birth)}</span></div><div class="fact"><span class="label">${t('f_weight')}</span><span class="v">${p.weight?esc(p.weight)+' kg':'—'}</span></div><div class="fact"><span class="label">${t('f_breed')}</span><span class="v">${esc(p.breed||'—')}</span></div><div class="fact"><span class="label">${t('f_sex')}</span><span class="v">${esc(sxL(p.sex)||'—')}</span></div></div>`;
   if(rem.length)s+=`<section class="sec"><div class="sec-h"><h2>${t('pending')}</h2></div><div class="list">${rem.map(r=>remRow(r,false)).join('')}</div></section>`;
+  s+=typeof recetasSection==='function'?recetasSection(p):'';
   if(state.caps.sample&&state.caps.img)s+=`<div class="reader"><div><b>${t('rx_t')}</b><p>${t('rx_d')}</p></div><label class="btn sm" for="rxfile">${I.scan.replace('<svg','<svg width="18" height="18"')}${t('rx_btn')}</label><input id="rxfile" type="file" accept="image/*" hidden></div>`;
   s+=`<section class="sec"><div class="sec-h"><h2>${t('history')}</h2><button class="lnk" data-act="fab">${t('add_plus')}</button></div>`;
   if(entries.length)s+=`<div class="tabs" role="group">${[['todo',t('all'),entries.length]].concat(Object.keys(TYPE_META).filter(k=>counts[k]).map(k=>[k,TT(k).plural,counts[k]])).map(([k,l,c])=>`<button class="tab" data-act="filter" data-f="${k}" aria-pressed="${state.filter===k}">${l} ${c}</button>`).join('')}</div>`;
@@ -1064,7 +1217,7 @@ function openSheet(html){$('#layer').innerHTML=`<div class="scrim" data-act="clo
 function closeSheet(){$('#layer').innerHTML='';document.body.style.overflow=''}
 function typePicker(p){
   const rx=state.caps.sample&&state.caps.img;
-  openSheet(`<div><div class="label">${esc(p.name)}</div><h2>${t('pick_t')}</h2></div><div class="types">${rx?`<button class="wide" data-act="pick-rx"><span class="ticon">${I.scan}</span><span>${t('pick_rx')}<small>${t('pick_rx_d')}</small></span></button>`:''}${Object.keys(TYPE_META).map(k=>{const ty=TT(k),lk=k==='med'&&!isPremium();return `<button data-act="${lk?'premium':'new-entry'}" data-type="${k}"${lk?' data-into="tp-prem" data-why="prem_med" class="lockedt"':''} style="--tc:var(${ty.color})"><span class="ticon">${I[ty.icon]}</span><span>${ty.label}${lk?PBADGE():''}<small>${ty.hint}</small></span></button>`}).join('')}<div id="tp-prem" hidden style="grid-column:1/-1"></div></div>`);
+  openSheet(`<div><div class="label">${esc(p.name)}</div><h2>${t('pick_t')}</h2></div><div class="types">${typeof recetaPickerBtn==='function'?recetaPickerBtn(p):''}${rx?`<button class="wide" data-act="pick-rx"><span class="ticon">${I.scan}</span><span>${t('pick_rx')}<small>${t('pick_rx_d')}</small></span></button>`:''}${Object.keys(TYPE_META).map(k=>{const ty=TT(k),lk=k==='med'&&!isPremium();return `<button data-act="${lk?'premium':'new-entry'}" data-type="${k}"${lk?' data-into="tp-prem" data-why="prem_med" class="lockedt"':''} style="--tc:var(${ty.color})"><span class="ticon">${I[ty.icon]}</span><span>${ty.label}${lk?PBADGE():''}<small>${ty.hint}</small></span></button>`}).join('')}<div id="tp-prem" hidden style="grid-column:1/-1"></div></div>`);
 }
 let draftPhoto=null,draftSex='',draftSpecies='Perro';
 function petForm(p){
