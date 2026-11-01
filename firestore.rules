@@ -1,0 +1,87 @@
+rules_version = '2';
+// PETFILE — reglas de seguridad de Firestore (Grupo ARCA)
+// Las mascotas pertenecen a una FAMILIA. Cada persona tiene su cuenta y su
+// familia propia; puede unirse a otra con un código de invitación.
+// Los primeros 12 días la familia tiene Premium de prueba; después queda la
+// versión gratis. La licencia (paidUntil) es de la familia y solo la pueden
+// poner la consola de Firebase o las funciones de Netlify (Lemon Squeezy).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function userData(uid) { return get(/databases/$(database)/documents/users/$(uid)).data; }
+    function fam(fid) { return get(/databases/$(database)/documents/families/$(fid)).data; }
+    function isMember(fid) { return signedIn() && me() in fam(fid).members; }
+
+    match /users/{uid} {
+      allow read: if signedIn() && me() == uid;
+      allow create: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['email', 'name', 'lang', 'trialStart', 'familyId'])
+        && request.resource.data.trialStart == request.time;
+      allow update: if signedIn() && me() == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'lang', 'familyId']);
+      allow delete: if false;
+
+      // Datos de la versión anterior: solo lectura, para pasarlos a la familia.
+      match /pets/{petId} {
+        allow read: if signedIn() && me() == uid;
+        allow write: if false;
+      }
+    }
+
+    match /invites/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['familyId', 'ownerName'])
+        && getAfter(/databases/$(database)/documents/families/$(request.resource.data.familyId)).data.owner == me()
+        && getAfter(/databases/$(database)/documents/families/$(request.resource.data.familyId)).data.code == code;
+      allow delete: if signedIn() && fam(resource.data.familyId).owner == me();
+      allow update: if false;
+    }
+
+    match /families/{fid} {
+      allow read: if signedIn() && (fid == me() || me() in resource.data.members);
+
+      // Cada persona crea solo su propia familia (con su mismo ID).
+      // La prueba arranca al crear la cuenta; no se reinicia.
+      allow create: if signedIn() && fid == me()
+        && request.resource.data.keys().hasOnly(['owner', 'members', 'memberInfo', 'code', 'name', 'trialStart'])
+        && request.resource.data.owner == me()
+        && request.resource.data.members == [me()]
+        && (request.resource.data.trialStart == request.time
+            || request.resource.data.trialStart == userData(me()).trialStart);
+
+      allow update: if signedIn() && (
+        // Administrador: cambia el código o quita personas (no puede agregar ni irse).
+        (resource.data.owner == me()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'code', 'members', 'memberInfo'])
+          && resource.data.members.hasAll(request.resource.data.members)
+          && me() in request.resource.data.members)
+        ||
+        // Unirse con el código correcto (máximo 6 personas).
+        (!(me() in resource.data.members)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberInfo', 'joinCode'])
+          && request.resource.data.joinCode == resource.data.code
+          && request.resource.data.members.hasAll(resource.data.members)
+          && me() in request.resource.data.members
+          && request.resource.data.members.size() == resource.data.members.size() + 1
+          && request.resource.data.members.size() <= 6)
+        ||
+        // Salir de la familia (cualquiera menos el administrador).
+        (me() in resource.data.members && resource.data.owner != me()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberInfo'])
+          && !(me() in request.resource.data.members)
+          && request.resource.data.members.hasAll(resource.data.members.removeAll([me()]))
+          && request.resource.data.members.size() == resource.data.members.size() - 1)
+      );
+      allow delete: if false;
+
+      match /pets/{petId} {
+        allow read: if isMember(fid);
+        allow create, update, delete: if isMember(fid);
+      }
+    }
+  }
+}

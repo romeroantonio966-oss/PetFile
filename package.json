@@ -1,0 +1,9 @@
+{
+  "name": "petfile",
+  "private": true,
+  "description": "PETFILE — expediente de salud de mascotas (Grupo ARCA)",
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "firebase-admin": "12.7.0"
+  }
+}
