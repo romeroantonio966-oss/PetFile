@@ -1,11 +1,11 @@
 // Función programada (cada hora): manda notificaciones de PETFILE al celular.
 // - A las 7:00 de la hora local de cada persona: resumen de lo que toca hoy y mañana.
 // - Una hora antes de cada cita con hora.
-// Solo para familias con Premium (prueba de 12 días o licencia activa).
+// Solo para familias con Premium (licencia activa).
 const webpush = require('web-push');
 const { firebase, json } = require('../lib/common');
 
-const TRIAL_DAYS = 12;
+const TRIAL_DAYS = 0; // sin prueba gratis
 const DAILY_HOUR = 7;
 
 const TXT = {

@@ -2,8 +2,7 @@ rules_version = '2';
 // PETFILE — reglas de seguridad de Firestore (Grupo ARCA)
 // Las mascotas pertenecen a una FAMILIA. Cada persona tiene su cuenta y su
 // familia propia; puede unirse a otra con un código de invitación.
-// Los primeros 12 días la familia tiene Premium de prueba; después queda la
-// versión gratis, y la familia compartida solo funciona con Premium. La licencia (paidUntil) es de la familia y solo la pueden
+// Hay versión gratis (1 mascota) y Premium; la familia compartida solo funciona con Premium. La licencia (paidUntil) es de la familia y solo la pueden
 // poner la consola de Firebase o las funciones de Netlify (Lemon Squeezy).
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -13,10 +12,9 @@ service cloud.firestore {
     function userData(uid) { return get(/databases/$(database)/documents/users/$(uid)).data; }
     function fam(fid) { return get(/databases/$(database)/documents/families/$(fid)).data; }
     function isMember(fid) { return signedIn() && me() in fam(fid).members; }
-    // Premium: licencia pagada o prueba de 12 días vigente.
+    // Premium: licencia pagada y vigente (no hay prueba gratis).
     function premium(f) {
-      return f.get('paidUntil', timestamp.value(0)) > request.time
-        || f.trialStart + duration.value(12, 'd') > request.time;
+      return f.get('paidUntil', timestamp.value(0)) > request.time;
     }
     // Familia es Premium: sin Premium, solo el administrador ve y edita sus mascotas.
     function canUse(fid) {
