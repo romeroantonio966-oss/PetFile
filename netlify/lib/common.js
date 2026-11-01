@@ -2,11 +2,25 @@
 const admin = require('firebase-admin');
 
 let app = null;
+
+// Acepta la clave tal como se pegue en Netlify: con o sin las llaves { } de los extremos,
+// con comillas o espacios de más, o codificada en base64.
+function parseServiceAccount(raw) {
+  let t = String(raw).trim().replace(/^[`'"]+|[`'"]+$/g, (m) => (m.includes('"') && m.length === 1 ? m : ''));
+  if (!t.startsWith('{') && /^[A-Za-z0-9+/=\s]+$/.test(t)) {
+    try { t = Buffer.from(t, 'base64').toString('utf8').trim(); } catch {}
+  }
+  const tries = [t, '{' + t, t + '}', '{' + t + '}', '{' + t.replace(/,\s*$/, '') + '}'];
+  for (const c of tries) {
+    try { const o = JSON.parse(c); if (o && o.private_key && o.client_email) return o; } catch {}
+  }
+  throw new Error('La variable FIREBASE_SERVICE_ACCOUNT no tiene el contenido completo del archivo JSON de Firebase');
+}
 function firebase() {
   if (!app) {
     const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
     if (!raw) throw new Error('Falta la variable FIREBASE_SERVICE_ACCOUNT en Netlify');
-    app = admin.initializeApp({ credential: admin.credential.cert(JSON.parse(raw)) });
+    app = admin.initializeApp({ credential: admin.credential.cert(parseServiceAccount(raw)) });
   }
   return admin;
 }
