@@ -2,10 +2,10 @@
 // El cliente pega el código de licencia que le llegó por correo y su familia pasa a Premium.
 const { firebase, paidUntilFrom, lemonActivate, storeOk, json } = require('../lib/common');
 
-exports.handler = async (event) => {
+const run = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'method' });
   let admin;
-  try { admin = firebase(); } catch (e) { console.error(e); return json(500, { error: 'config' }); }
+  try { admin = firebase(); } catch (e) { console.error(e); return json(500, { error: 'config', detail: String(e.message || e).slice(0, 300) }); }
 
   // 1) ¿Quién es? (token de la sesión de Firebase)
   const token = (event.headers.authorization || event.headers.Authorization || '').replace(/^Bearer\s+/i, '');
@@ -50,4 +50,10 @@ exports.handler = async (event) => {
   if (res.instance && res.instance.id) data.licenseInstance = res.instance.id;
   await famRef.set(data, { merge: true });
   return json(200, { ok: true, paidUntil: data.paidUntil.toDate().toISOString() });
+};
+
+// Envoltura: cualquier error inesperado vuelve con el detalle para poder diagnosticarlo.
+exports.handler = async (event) => {
+  try { return await run(event); }
+  catch (e) { console.error('activate', e); return json(500, { error: 'server', detail: String((e && e.message) || e).slice(0, 300) }); }
 };

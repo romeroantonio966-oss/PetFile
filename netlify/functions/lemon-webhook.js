@@ -3,7 +3,7 @@
 const crypto = require('node:crypto');
 const { firebase, paidUntilFrom, lemonActivate, storeOk, json } = require('../lib/common');
 
-exports.handler = async (event) => {
+const run = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'method' });
   const raw = event.isBase64Encoded ? Buffer.from(event.body || '', 'base64').toString('utf8') : (event.body || '');
 
@@ -46,4 +46,10 @@ exports.handler = async (event) => {
   }
   await famRef.set(data, { merge: true });
   return json(200, { ok: true, familyId });
+};
+
+// Envoltura: cualquier error inesperado vuelve con el detalle para poder diagnosticarlo.
+exports.handler = async (event) => {
+  try { return await run(event); }
+  catch (e) { console.error('webhook', e); return json(500, { error: 'server', detail: String((e && e.message) || e).slice(0, 300) }); }
 };
