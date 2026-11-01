@@ -270,6 +270,7 @@ body.signed-out .iconbtn{display:none}
 .ntcard{display:grid;grid-template-columns:38px 1fr;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;text-align:left}
 .ntcard b{font-size:15px}.ntok{color:var(--ok);font-weight:700;font-size:13.5px}
 .lgline{font-size:12.5px;line-height:1.5;text-align:center;margin:0}.lgline a{color:var(--accent);font-weight:600}
+.famlock{text-align:left;gap:10px}.famlock ul{margin:0;padding-left:20px;font-size:14px;line-height:1.5}.famlock .favs{margin-bottom:2px}
 .fab{width:58px;height:58px;border-radius:20px;border:0;background:var(--ink);color:var(--bg);display:grid;place-items:center;margin-top:-26px;box-shadow:0 8px 20px rgba(0,0,0,.22)}
 .fab svg{width:28px;height:28px}
 
@@ -489,11 +490,11 @@ Object.assign(S.es,{
   lic_trial:n=>`Premium de prueba · ${n===1?'queda 1 día':`quedan ${n} días`}`,lic_free:'Versión gratis',lic_paidOn:'Premium activo',lic_freeB:'Estás en la versión gratis.',lic_trialB:'Probá todo Premium gratis.',lic_paid:d=>`Licencia activa hasta ${d}`,lic_expT:'La prueba gratis terminó',lic_expD:'Las mascotas y su historial siguen guardados. Activá la licencia para volver a verlos y editarlos.',lic_buy:'Comprar licencia',lic_refresh:'Ya compré, actualizar',lic_contact:'¿Dudas o ya pagaste? Escribinos a',lic_label:'Licencia vencida',lic_noWrite:'La licencia venció. Hay que activarla para guardar cambios.',lic_still:'Todavía no aparece activa. Si ya pagaste, puede tardar un rato en activarse.',lic_ok:'¡Licencia activa! Gracias.',lic_expired:'Vencida',
   ac_t:'Mi cuenta',ac_plan:'Plan de la familia',ac_id:'ID de licencia',ac_idHint:'Envialo junto con tu compra o si necesitás soporte.',ac_copy:'Copiar',ac_copied:'Copiado',ac_logout:'Cerrar sesión',made:'Creado por',loading:'Cargando…',
   t_cloudErr:'No se pudo guardar. Revisá tu conexión.',cfg:'Falta la configuración de Firebase en el archivo (FIREBASE_CONFIG).',
-  fam_t:'Mi familia',fam_d:'Compartí las mascotas y su registro. Cada persona entra con su propia cuenta y solo el administrador paga la licencia.',fam_cardSolo:'Invitá a tu familia para ver y editar juntos el registro de las mascotas.',fam_cardMany:n=>`${n} personas comparten estas mascotas`,
+  fam_t:'Mi familia',fam_lockT:'Compartí PETFILE con tu familia',fam_lockD:'Familia es una función Premium. Con la licencia, tu familia usa PETFILE con un solo pago.',fam_lockList:['Hasta 6 personas, cada una con su propia cuenta','Todos ven y editan las mismas mascotas, citas y recetas','Los recordatorios le llegan a cada persona','Solo vos pagás la licencia'],fam_paused:'Las demás personas de tu familia no pueden ver las mascotas hasta que actives Premium.',fam_haveCode:'Me invitaron: tengo un código',fam_cardLocked:'Compartí las mascotas con tu familia.',prem_fam:'Familia es una función Premium.',fam_memberLockT:'Tu familia ya no tiene Premium',fam_d:'Compartí las mascotas y su registro. Cada persona entra con su propia cuenta y solo el administrador paga la licencia.',fam_cardSolo:'Invitá a tu familia para ver y editar juntos el registro de las mascotas.',fam_cardMany:n=>`${n} personas comparten estas mascotas`,
   fam_admin:'Administrador',fam_you:'vos',fam_count:n=>`${n} de ${MAX_FAMILY} personas`,fam_invite:'Invitar a alguien',fam_inviteD:'Compartí este código o el enlace. La otra persona crea su cuenta y se une con él.',fam_code:'Código de invitación',fam_share:'Compartir invitación',fam_copyLink:'Copiar enlace',fam_newCode:'Cambiar código',fam_newCodeOk:'Código cambiado. El anterior ya no sirve.',
   fam_join:'Unirme a otra familia',fam_joinT:'Unirme a una familia',fam_joinD:'Escribí el código que te compartieron.',fam_codePh:'Ej. K7M2QX',fam_find:'Buscar',fam_of:n=>`Familia de ${n}`,fam_move:n=>n===1?'Tu mascota se va a pasar a esta familia.':`Tus ${n} mascotas se van a pasar a esta familia.`,fam_noPets:'Vas a ver las mascotas de esa familia y podrás agregar y editar registros.',fam_joinBtn:'Unirme',fam_joined:n=>`Ya sos parte de la familia de ${n}`,
   fam_leave:'Salir de la familia',fam_leaveQ:'Las mascotas se quedan con la familia y volvés a tu cuenta personal. ¿Salir?',fam_left:'Saliste de la familia',fam_remove:'Quitar',fam_removeQ:n=>`¿Quitar a ${n}? Va a dejar de ver las mascotas de la familia.`,fam_removedOk:n=>`${n} ya no está en la familia`,fam_removed:'Ya no sos parte de esa familia. Volviste a tu cuenta personal.',
-  fam_e_code:'No encontramos ese código. Revisalo e intentá de nuevo.',fam_e_full:`Esa familia ya tiene el máximo de ${MAX_FAMILY} personas, o el código cambió.`,fam_e_owner:'Primero quitá a las otras personas de tu familia para poder unirte a otra.',fam_e_same:'Ya sos parte de esa familia.',
+  fam_e_code:'No encontramos ese código. Revisalo e intentá de nuevo.',fam_e_full:'No se pudo unir: esa familia ya tiene 6 personas o no tiene Premium activo. Pedile a quien te invitó que lo revise.',fam_e_owner:'Primero quitá a las otras personas de tu familia para poder unirte a otra.',fam_e_same:'Ya sos parte de esa familia.',
   fam_payer:n=>`La licencia la paga ${n}, el administrador de la familia.`,fam_lockMember:n=>`La licencia de tu familia venció. Pedile a ${n} que la renueve, o salí de la familia para volver a tu cuenta.`,
   ac_key:'¿Ya compraste? Activá tu licencia',ac_keyD:'Pegá el código de licencia que te llegó al correo después de la compra.',ac_keyPh:'Código de licencia',ac_keyBtn:'Activar',ac_keyOk:'¡Listo! Ya tenés Premium.',ac_keyBad:'Ese código no es válido. Revisalo en el correo de la compra.',ac_keyUsed:'Ese código ya se activó en otra cuenta. Escribinos si necesitás ayuda.',ac_keyExp:'Ese código está vencido o fue reembolsado.',ac_keyFail:'No se pudo activar ahora. Intentá de nuevo en unos minutos.',prem_have:'¿Ya compraste? Activá tu código',
   nav_family:'Familia',help_btn:'Ayuda',premium:'Premium',prem_t:'Función Premium',prem_see:'Ver Premium',prem_d:'Con la licencia Premium desbloqueás:',prem_list:['Mascotas sin límite (la versión gratis permite 2)','Foto de perfil de cada mascota','Todas las especies: conejo, ave y otras','Macho castrado y hembra castrada','Fecha de nacimiento con edad automática','Medicamentos y tratamientos','Recordatorios en el calendario del teléfono','Invitar a tu familia (hasta 6 personas)','Muy pronto: lector de recetas'],prem_pets:'La versión gratis permite hasta 2 mascotas.',prem_cal:'Pasar los recordatorios al calendario del teléfono es Premium.',prem_med:'Registrar medicamentos y tratamientos es Premium.',fam_inviteLocked:'Compartir las mascotas con tu familia es parte de Premium.',
@@ -507,11 +508,11 @@ Object.assign(S.en,{
   lic_trial:n=>`Premium trial · ${n===1?'1 day left':`${n} days left`}`,lic_free:'Free version',lic_paidOn:'Premium active',lic_freeB:"You're on the free version.",lic_trialB:'Try all of Premium for free.',lic_paid:d=>`License active until ${d}`,lic_expT:'The free trial has ended',lic_expD:'The pets and their history are still saved. Activate the license to see and edit them again.',lic_buy:'Buy license',lic_refresh:'I already paid, refresh',lic_contact:'Questions or already paid? Email us at',lic_label:'License expired',lic_noWrite:'The license expired. It needs to be activated to save changes.',lic_still:"It doesn't show as active yet. If you already paid, it can take a little while.",lic_ok:'License active! Thank you.',lic_expired:'Expired',
   ac_t:'My account',ac_plan:'Family plan',ac_id:'License ID',ac_idHint:'Send it with your purchase or if you need support.',ac_copy:'Copy',ac_copied:'Copied',ac_logout:'Sign out',made:'Made by',loading:'Loading…',
   t_cloudErr:"Couldn't save. Check your connection.",cfg:'Firebase settings are missing in the file (FIREBASE_CONFIG).',
-  fam_t:'My family',fam_d:'Share the pets and their records. Everyone signs in with their own account and only the admin pays for the license.',fam_cardSolo:'Invite your family to view and edit the pet records together.',fam_cardMany:n=>`${n} people share these pets`,
+  fam_t:'My family',fam_lockT:'Share PETFILE with your family',fam_lockD:'Family is a Premium feature. With the license, your whole family uses PETFILE for one payment.',fam_lockList:['Up to 6 people, each with their own account','Everyone sees and edits the same pets, appointments and prescriptions','Each person gets the reminders','Only you pay for the license'],fam_paused:"The other people in your family can't see the pets until you activate Premium.",fam_haveCode:'I was invited: I have a code',fam_cardLocked:'Share the pets with your family.',prem_fam:'Family is a Premium feature.',fam_memberLockT:'Your family no longer has Premium',fam_d:'Share the pets and their records. Everyone signs in with their own account and only the admin pays for the license.',fam_cardSolo:'Invite your family to view and edit the pet records together.',fam_cardMany:n=>`${n} people share these pets`,
   fam_admin:'Admin',fam_you:'you',fam_count:n=>`${n} of ${MAX_FAMILY} people`,fam_invite:'Invite someone',fam_inviteD:'Share this code or the link. The other person creates an account and joins with it.',fam_code:'Invite code',fam_share:'Share invite',fam_copyLink:'Copy link',fam_newCode:'Change code',fam_newCodeOk:"Code changed. The old one doesn't work anymore.",
   fam_join:'Join another family',fam_joinT:'Join a family',fam_joinD:'Enter the code you were sent.',fam_codePh:'e.g. K7M2QX',fam_find:'Find',fam_of:n=>`${n}'s family`,fam_move:n=>n===1?'Your pet will move to this family.':`Your ${n} pets will move to this family.`,fam_noPets:"You'll see that family's pets and can add and edit records.",fam_joinBtn:'Join',fam_joined:n=>`You're now part of ${n}'s family`,
   fam_leave:'Leave family',fam_leaveQ:'The pets stay with the family and you go back to your personal account. Leave?',fam_left:'You left the family',fam_remove:'Remove',fam_removeQ:n=>`Remove ${n}? They'll stop seeing the family's pets.`,fam_removedOk:n=>`${n} is no longer in the family`,fam_removed:"You're no longer part of that family. You're back on your personal account.",
-  fam_e_code:"We couldn't find that code. Check it and try again.",fam_e_full:`That family already has the maximum of ${MAX_FAMILY} people, or the code changed.`,fam_e_owner:'First remove the other people from your family to join another one.',fam_e_same:"You're already part of that family.",
+  fam_e_code:"We couldn't find that code. Check it and try again.",fam_e_full:"Couldn't join: that family already has 6 people or doesn't have Premium active. Ask whoever invited you to check.",fam_e_owner:'First remove the other people from your family to join another one.',fam_e_same:"You're already part of that family.",
   fam_payer:n=>`The license is paid by ${n}, the family admin.`,fam_lockMember:n=>`Your family's license expired. Ask ${n} to renew it, or leave the family to go back to your account.`,
   ac_key:'Already bought it? Activate your license',ac_keyD:'Paste the license code you got by email after your purchase.',ac_keyPh:'License code',ac_keyBtn:'Activate',ac_keyOk:"Done! You have Premium now.",ac_keyBad:"That code isn't valid. Check it in your purchase email.",ac_keyUsed:'That code was already activated on another account. Email us if you need help.',ac_keyExp:'That code has expired or was refunded.',ac_keyFail:"Couldn't activate it right now. Try again in a few minutes.",prem_have:'Already bought it? Activate your code',
   nav_family:'Family',help_btn:'Help',premium:'Premium',prem_t:'Premium feature',prem_see:'See Premium',prem_d:'With the Premium license you unlock:',prem_list:['Unlimited pets (the free version allows 2)','Profile photo for each pet','Every species: rabbit, bird and more','Neutered male and spayed female','Date of birth with automatic age','Medications and treatments','Reminders in your phone calendar','Invite your family (up to 6 people)','Coming soon: prescription reader'],prem_pets:'The free version allows up to 2 pets.',prem_cal:'Adding reminders to your phone calendar is Premium.',prem_med:'Logging medications and treatments is Premium.',fam_inviteLocked:'Sharing the pets with your family is part of Premium.',
@@ -551,7 +552,7 @@ function license(){
   if(paid>now)return{status:'paid',until:paid};
   const end=ts+TRIAL_DAYS*864e5;
   if(now<end)return{status:'trial',days:Math.max(1,Math.ceil((end-now)/864e5)),end};
-  return{status:'free',end};
+  return{status:fb.user&&f.owner&&f.owner!==fb.user.uid?'expired':'free',end};
 }
 const hasCheckout=()=>!/PEGAR/.test(CHECKOUT_URL);
 function checkoutUrl(){try{const u=new URL(CHECKOUT_URL);if(fb.user){u.searchParams.set('checkout[email]',fb.user.email||'');u.searchParams.set('checkout[custom][user_id]',fb.user.uid);if(fb.famId)u.searchParams.set('checkout[custom][family_id]',fb.famId)}return u.toString()}catch(e){return CHECKOUT_URL}}
@@ -567,6 +568,7 @@ function planText(){const L=license();return L.status==='paid'?(new Date(L.until
 function famMembers(){const f=fb.fam;if(!f)return[];return (f.members||[]).map(id=>Object.assign({id},(f.memberInfo||{})[id]||{})).sort((a,b)=>(a.id===f.owner?-1:b.id===f.owner?1:0))}
 function famCard(){
   if(!fb.fam)return'';const m=famMembers();
+  if(!isPremium())return `<button class="famcard" data-act="family"><span class="favs"><span class="fav">+</span></span><span style="min-width:0"><b>${t('fam_t')} ${PBADGE()}</b><span>${t('fam_cardLocked')}</span></span></button>`;
   const av=m.slice(0,4).map(x=>`<span class="fav">${esc((x.name||x.email||'?').charAt(0).toUpperCase())}</span>`).join('');
   return `<button class="famcard" data-act="family"><span class="favs">${av}</span><span style="min-width:0"><b>${t('fam_t')}</b><span>${m.length>1?t('fam_cardMany',m.length):t('fam_cardSolo')}</span></span><span class="lnk">${m.length>1?'':t('fam_invite')}</span></button>`;
 }
@@ -681,6 +683,7 @@ function maybeJoinPending(){const c=pendingJoin();if(!c||!fb.fam)return;clearJoi
 function familyBody(){
   const f=fb.fam;if(!f)return`<p class="muted" style="text-align:center"><span class="spinner"></span> ${t('loading')}</p>`;
   const uid=fb.user.uid,own=isFamOwner(),m=famMembers(),prem=isPremium();
+  if(own&&!prem)return famLocked(m);
   const rows=m.map(x=>`<div class="mrow"><span class="fav">${esc((x.name||x.email||'?').charAt(0).toUpperCase())}</span><div style="min-width:0"><b>${esc(x.name||x.email||'—')}${x.id===uid?` <span class="muted" style="font-weight:500">(${t('fam_you')})</span>`:''}</b><span>${esc(x.email||'')}</span></div>${x.id===f.owner?`<span class="tagsm">${t('fam_admin')}</span>`:own?`<button class="lnk" style="color:var(--warn)" data-act="fam-remove" data-id="${x.id}">${t('fam_remove')}</button>`:''}</div><div class="mconf" id="mc-${x.id}"></div>`).join('');
   const invite=!own?`<p class="muted" style="margin:0;font-size:13.5px">${esc(t('fam_payer',ownerName()))}</p>`
     :prem?`<div class="invbox"><b>${t('fam_invite')}</b><span class="muted" style="font-size:13.5px">${t('fam_inviteD')}</span>
@@ -692,6 +695,16 @@ function familyBody(){
       <button class="btn dark block" data-act="premium" data-into="fam-prem">${t('prem_see')}</button><div id="fam-prem" hidden></div></div>`;
   return `<div class="list">${rows}</div><span class="muted" style="font-size:12.5px;margin-top:-12px">${t('fam_count',m.length)}</span>${invite}
   <div id="famfoot" style="display:flex;flex-direction:column;gap:8px">${own?'':`<button class="btn ghost block" style="color:var(--warn)" data-act="fam-leave-ask">${t('fam_leave')}</button>`}<button class="btn ghost block" data-act="fam-join">${t('fam_join')}</button></div>`;
+}
+function famLocked(m){
+  const others=m.filter(x=>x.id!==fb.user.uid);
+  const rows=others.map(x=>`<div class="mrow"><span class="fav">${esc((x.name||x.email||'?').charAt(0).toUpperCase())}</span><div style="min-width:0"><b>${esc(x.name||x.email||'—')}</b><span>${esc(x.email||'')}</span></div><button class="lnk" style="color:var(--warn)" data-act="fam-remove" data-id="${x.id}">${t('fam_remove')}</button></div><div class="mconf" id="mc-${x.id}"></div>`).join('');
+  return `<div class="invbox famlock"><span class="favs" aria-hidden="true"><span class="fav">A</span><span class="fav">M</span><span class="fav">S</span><span class="fav">+</span></span>
+  <b style="font-size:18px">${t('fam_lockT')} ${PBADGE()}</b><span class="muted" style="font-size:14px">${t('fam_lockD')}</span>
+  <ul>${t('fam_lockList').map(x=>`<li>${x}</li>`).join('')}</ul>
+  <button class="btn dark block" data-act="premium" data-why="prem_fam" data-into="fam-prem">${t('prem_see')}</button><div id="fam-prem" hidden></div></div>
+  ${others.length?`<p class="muted" style="margin:0;font-size:13.5px">${t('fam_paused')}</p><div class="list">${rows}</div>`:''}
+  <div id="famfoot" style="display:flex;flex-direction:column;gap:8px"><button class="btn ghost block" data-act="fam-join">${t('fam_haveCode')}</button></div>`;
 }
 function familyView(){return `<section class="hello"><h1>${t('fam_t')}</h1><p>${t('fam_d')}</p></section>`+familyBody()}
 function familySheet(){closeSheet();if(state.view.name==='familia')render();else go('familia')}
@@ -792,7 +805,7 @@ function accountSheet(){
 }
 function lockView(){
   const own=isFamOwner();
-  return `<div class="lock" role="dialog" aria-modal="true" aria-labelledby="lk-t"><div class="card"><span class="tag">${t('lic_label')}</span><h2 id="lk-t">${t('lic_expT')}</h2><p class="muted" style="margin:0">${own?t('lic_expD'):esc(t('fam_lockMember',ownerName()))}</p>
+  return `<div class="lock" role="dialog" aria-modal="true" aria-labelledby="lk-t"><div class="card"><span class="tag">${t('lic_label')}</span><h2 id="lk-t">${own?t('lic_expT'):t('fam_memberLockT')}</h2><p class="muted" style="margin:0">${own?t('lic_expD'):esc(t('fam_lockMember',ownerName()))}</p>
   ${own?buyBtn('dark block'):''}<button class="btn ghost block" data-act="refresh-lic">${t('lic_refresh')}</button>
   ${own?'':`<button class="btn ghost block" style="color:var(--warn)" data-act="fam-leave-ask">${t('fam_leave')}</button><div id="famfoot"></div>`}
   <p style="margin:0;font-size:13px" class="muted">${t('lic_contact')} <b style="color:var(--ink);user-select:all">${CONTACT_EMAIL}</b></p>
@@ -811,6 +824,7 @@ function render(){
   renderMain();
   $('#nb-familia').setAttribute('aria-current',state.view.name==='familia'?'page':'false');$('#nb-ayuda').setAttribute('aria-label',t('help_btn'));
   const exp=!!fb.fam&&license().status==='expired';
+  if(exp)fb.wasLocked=true;else if(fb.wasLocked&&fb.fam){fb.wasLocked=false;location.reload();return}
   app.classList.toggle('locked',exp);app.setAttribute('aria-hidden',exp?'true':'false');
   if(exp){if(!lock.innerHTML||lock.dataset.l!==lang){lock.innerHTML=lockView();lock.dataset.l=lang}}else lock.innerHTML='';
 }

@@ -3,7 +3,7 @@ rules_version = '2';
 // Las mascotas pertenecen a una FAMILIA. Cada persona tiene su cuenta y su
 // familia propia; puede unirse a otra con un código de invitación.
 // Los primeros 12 días la familia tiene Premium de prueba; después queda la
-// versión gratis. La licencia (paidUntil) es de la familia y solo la pueden
+// versión gratis, y la familia compartida solo funciona con Premium. La licencia (paidUntil) es de la familia y solo la pueden
 // poner la consola de Firebase o las funciones de Netlify (Lemon Squeezy).
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -13,6 +13,16 @@ service cloud.firestore {
     function userData(uid) { return get(/databases/$(database)/documents/users/$(uid)).data; }
     function fam(fid) { return get(/databases/$(database)/documents/families/$(fid)).data; }
     function isMember(fid) { return signedIn() && me() in fam(fid).members; }
+    // Premium: licencia pagada o prueba de 12 días vigente.
+    function premium(f) {
+      return f.get('paidUntil', timestamp.value(0)) > request.time
+        || f.trialStart + duration.value(12, 'd') > request.time;
+    }
+    // Familia es Premium: sin Premium, solo el administrador ve y edita sus mascotas.
+    function canUse(fid) {
+      let f = fam(fid);
+      return signedIn() && me() in f.members && (f.owner == me() || premium(f));
+    }
 
     match /users/{uid} {
       allow read: if signedIn() && me() == uid;
@@ -65,10 +75,11 @@ service cloud.firestore {
           && resource.data.members.hasAll(request.resource.data.members)
           && me() in request.resource.data.members)
         ||
-        // Unirse con el código correcto (máximo 6 personas).
+        // Unirse con el código correcto (máximo 6 personas y solo si la familia tiene Premium).
         (!(me() in resource.data.members)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberInfo', 'joinCode'])
           && request.resource.data.joinCode == resource.data.code
+          && premium(resource.data)
           && request.resource.data.members.hasAll(resource.data.members)
           && me() in request.resource.data.members
           && request.resource.data.members.size() == resource.data.members.size() + 1
@@ -84,18 +95,17 @@ service cloud.firestore {
       allow delete: if false;
 
       match /pets/{petId} {
-        allow read: if isMember(fid);
-        allow create, update, delete: if isMember(fid);
+        allow read, create, update, delete: if canUse(fid);
       }
 
       // Recetas: datos y miniatura en "recetas"; la foto completa aparte, en "recetasImg".
       match /recetas/{rid} {
-        allow read, delete: if isMember(fid);
-        allow create, update: if isMember(fid) && request.resource.data.thumb.size() < 120000;
+        allow read, delete: if canUse(fid);
+        allow create, update: if canUse(fid) && request.resource.data.thumb.size() < 120000;
       }
       match /recetasImg/{rid} {
-        allow read, delete: if isMember(fid);
-        allow create, update: if isMember(fid) && request.resource.data.img.size() < 950000;
+        allow read, delete: if canUse(fid);
+        allow create, update: if canUse(fid) && request.resource.data.img.size() < 950000;
       }
     }
   }
