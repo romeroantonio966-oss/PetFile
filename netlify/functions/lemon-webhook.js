@@ -51,5 +51,5 @@ const run = async (event) => {
 // Envoltura: cualquier error inesperado vuelve con el detalle para poder diagnosticarlo.
 exports.handler = async (event) => {
   try { return await run(event); }
-  catch (e) { console.error('webhook', e); return json(500, { error: 'server', detail: String((e && e.message) || e).slice(0, 300) }); }
+  catch (e) { console.error('webhook', e); return json(500, { error: 'server' }); }
 };

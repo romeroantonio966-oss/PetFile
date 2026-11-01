@@ -693,9 +693,9 @@ async function activateKey(ev){
     const tok=await fb.user.getIdToken();
     const r=await fetch('/.netlify/functions/activate',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({key})});
     const j=await r.json().catch(()=>({}));
-    if(!r.ok)throw{code:j.error||'fail',status:r.status,detail:j.detail||''};
+    if(!r.ok)throw{code:j.error||'fail'};
     closeSheet();toast(t('ac_keyOk'));
-  }catch(e){console.warn(e);const c=e&&e.code;msg.textContent=c==='invalid'?t('ac_keyBad'):c==='used'?t('ac_keyUsed'):c==='expired'?t('ac_keyExp'):t('ac_keyFail')+` (${(e&&e.status)||'red'}${c&&c!=='fail'?' · '+c:''})${e&&e.detail?' — '+e.detail:''}`;msg.hidden=false;go.disabled=false;go.textContent=t('ac_keyBtn')}
+  }catch(e){console.warn(e);const c=e&&e.code;msg.textContent=c==='invalid'?t('ac_keyBad'):c==='used'?t('ac_keyUsed'):c==='expired'?t('ac_keyExp'):t('ac_keyFail');msg.hidden=false;go.disabled=false;go.textContent=t('ac_keyBtn')}
 }
 document.addEventListener('submit',ev=>{if(ev.target&&ev.target.id==='keyform')activateKey(ev)});
 function joinSheet(prefill){

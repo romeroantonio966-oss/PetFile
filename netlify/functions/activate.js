@@ -5,7 +5,7 @@ const { firebase, paidUntilFrom, lemonActivate, storeOk, json } = require('../li
 const run = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'method' });
   let admin;
-  try { admin = firebase(); } catch (e) { console.error(e); return json(500, { error: 'config', detail: String(e.message || e).slice(0, 300) }); }
+  try { admin = firebase(); } catch (e) { console.error(e); return json(500, { error: 'config' }); }
 
   // 1) ¿Quién es? (token de la sesión de Firebase)
   const token = (event.headers.authorization || event.headers.Authorization || '').replace(/^Bearer\s+/i, '');
@@ -55,5 +55,5 @@ const run = async (event) => {
 // Envoltura: cualquier error inesperado vuelve con el detalle para poder diagnosticarlo.
 exports.handler = async (event) => {
   try { return await run(event); }
-  catch (e) { console.error('activate', e); return json(500, { error: 'server', detail: String((e && e.message) || e).slice(0, 300) }); }
+  catch (e) { console.error('activate', e); return json(500, { error: 'server' }); }
 };
