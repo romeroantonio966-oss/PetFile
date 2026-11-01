@@ -269,6 +269,7 @@ body.signed-out .iconbtn{display:none}
 .rcbig img{width:100%;display:block}
 .ntcard{display:grid;grid-template-columns:38px 1fr;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;text-align:left}
 .ntcard b{font-size:15px}.ntok{color:var(--ok);font-weight:700;font-size:13.5px}
+.lgline{font-size:12.5px;line-height:1.5;text-align:center;margin:0}.lgline a{color:var(--accent);font-weight:600}
 .fab{width:58px;height:58px;border-radius:20px;border:0;background:var(--ink);color:var(--bg);display:grid;place-items:center;margin-top:-26px;box-shadow:0 8px 20px rgba(0,0,0,.22)}
 .fab svg{width:28px;height:28px}
 
@@ -754,6 +755,7 @@ function authView(){
     <label class="f full">${t('au_pw')}${pw('au-pw',up?t('au_pwHint'):'',up?'new-password':'current-password')}</label>
     ${up?`<label class="f full">${t('au_pw2')}${pw('au-pw2','','new-password')}</label>`:''}
     <div id="au-err" class="full err" role="alert" hidden></div>
+    ${up&&typeof consentLine==='function'?consentLine():''}
     <button class="btn dark block full" type="submit" id="au-go">${up?t('au_up'):t('au_in')}</button>
     ${up?'':`<button type="button" class="lnk full" data-act="forgot" style="justify-self:center">${t('au_forgot')}</button>`}
   </form><button type="button" class="lnk" data-act="install" style="align-self:center">${t('in_link')}</button>${arcaBadge()}</div>`;
@@ -786,7 +788,7 @@ function accountSheet(){
   ${L.status!=='paid'?keyBox():''}
   ${famCard()}
   ${own?`<div style="display:flex;flex-direction:column;gap:6px"><span class="label">${t('ac_id')}</span><div style="display:flex;gap:8px;align-items:center"><div class="idbox" style="flex:1">${esc(fb.famId||u.uid)}</div><button class="btn sm ghost" data-act="copy-uid">${t('ac_copy')}</button></div><span class="muted" style="font-size:12.5px">${t('ac_idHint')}</span></div>`:''}
-  ${typeof notifCard==='function'?notifCard():''}${feedbackCard()}<button class="btn ghost block" data-act="logout">${t('ac_logout')}</button>${arcaBadge()}`);
+  ${typeof notifCard==='function'?notifCard():''}${feedbackCard()}<button class="btn ghost block" data-act="logout">${t('ac_logout')}</button>${typeof legalLinks==='function'?legalLinks()+deleteBtn():''}${arcaBadge()}`);
 }
 function lockView(){
   const own=isFamOwner();
@@ -1099,6 +1101,64 @@ document.addEventListener('click',ev=>{
   }
 },true);
 
+/* ---------- términos, privacidad y eliminar cuenta ---------- */
+Object.assign(S.es,{
+  lg_terms:'Términos de uso',lg_priv:'Política de privacidad',
+  lg_consent:(a,b)=>`Al crear tu cuenta aceptás los ${a} y la ${b}.`,
+  lg_vet:'PETFILE es un registro y no reemplaza la atención de tu veterinario.',
+  dl_btn:'Eliminar mi cuenta',dl_t:'¿Eliminar tu cuenta?',
+  dl_owner:'Se borran tu cuenta y tus datos. Si hay más personas en tu familia, las mascotas quedan con ellas y la siguiente persona pasa a ser la administradora. Si estás solo, se borran también todas las mascotas, recetas y registros.',
+  dl_member:'Se borran tu cuenta y tus datos y salís de la familia. Las mascotas compartidas quedan con la familia.',
+  dl_sub:'<b>Importante:</b> si pagaste Premium, cancelá la suscripción desde el correo de compra de Lemon Squeezy. Eliminar la cuenta no la cancela.',
+  dl_type:'Para confirmar, escribí ELIMINAR',dl_word:'ELIMINAR',dl_go:'Eliminar para siempre',dl_cancel:'Cancelar',
+  dl_err:'No se pudo eliminar la cuenta. Intentá de nuevo en un momento.',dl_done:'Tu cuenta fue eliminada.'
+});
+Object.assign(S.en,{
+  lg_terms:'Terms of use',lg_priv:'Privacy policy',
+  lg_consent:(a,b)=>`By creating an account you accept the ${a} and the ${b}.`,
+  lg_vet:"PETFILE is a record and doesn't replace your vet's care.",
+  dl_btn:'Delete my account',dl_t:'Delete your account?',
+  dl_owner:'Your account and personal data will be deleted. If there are other people in your family, the pets stay with them and the next person becomes the admin. If you are alone, all pets, prescriptions and records are deleted too.',
+  dl_member:'Your account and personal data will be deleted and you will leave the family. Shared pets stay with the family.',
+  dl_sub:"<b>Important:</b> if you paid for Premium, cancel the subscription from your Lemon Squeezy purchase email. Deleting the account doesn't cancel it.",
+  dl_type:'To confirm, type DELETE',dl_word:'DELETE',dl_go:'Delete forever',dl_cancel:'Cancel',
+  dl_err:"Couldn't delete the account. Try again in a moment.",dl_done:'Your account was deleted.'
+});
+const LG_URL=p=>p+'.html'+(lang==='en'?'#en':'');
+const lgA=(p,k)=>`<a href="${LG_URL(p)}" target="_blank" rel="noopener">${t(k)}</a>`;
+const consentLine=()=>`<p class="muted full lgline">${t('lg_consent',lgA('terminos','lg_terms'),lgA('privacidad','lg_priv'))}</p>`;
+const legalLinks=()=>`<p class="muted lgline">${lgA('terminos','lg_terms')} · ${lgA('privacidad','lg_priv')}<br>${t('lg_vet')}</p>`;
+const deleteBtn=()=>`<button class="lnk" data-act="del-acct" style="align-self:center;color:var(--warn)">${t('dl_btn')}</button>`;
+function deleteSheet(){
+  const own=typeof isFamOwner==='function'&&isFamOwner();
+  openSheet(`<h2>${t('dl_t')}</h2><p class="muted" style="margin:0">${own?t('dl_owner'):t('dl_member')}</p>
+  <p class="tip" style="margin:0">${t('dl_sub')}</p>
+  <label class="f full">${t('dl_type')}<input id="dl-word" autocomplete="off" autocapitalize="characters"></label>
+  <div id="dl-err" class="err" role="alert" hidden></div>
+  <button class="btn block" id="dl-go" data-act="del-acct-go" disabled style="background:var(--warn);color:#fff">${t('dl_go')}</button>
+  <button class="btn ghost block" data-act="close">${t('dl_cancel')}</button>`);
+  const i=$('#dl-word');i.addEventListener('input',()=>{$('#dl-go').disabled=i.value.trim().toUpperCase()!==t('dl_word')});
+}
+async function deleteAccount(){
+  const go=$('#dl-go'),err=$('#dl-err');if(!go||go.disabled)return;err.hidden=true;
+  go.disabled=true;go.innerHTML='<span class="spinner"></span>';
+  try{
+    const tok=await fb.user.getIdToken(true);
+    try{if('serviceWorker' in navigator&&navigator.serviceWorker.controller){const reg=await navigator.serviceWorker.getRegistration();const sub=reg&&await reg.pushManager.getSubscription();if(sub)await sub.unsubscribe()}}catch(e){}
+    const r=await fetch('/.netlify/functions/delete-account',{method:'POST',headers:{Authorization:'Bearer '+tok,'Content-Type':'application/json'},body:'{}'});
+    const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw new Error(j.error||r.status);
+    try{['petfile-fb-last','petfile-install-dismissed'].forEach(k=>localStorage.removeItem(k))}catch(e){}
+    closeSheet();try{await auth.signOut()}catch(e){}
+    try{await firebase.firestore().clearPersistence()}catch(e){}
+    state.view={name:'home'};toast(t('dl_done'));
+  }catch(e){console.warn(e);err.textContent=t('dl_err');err.hidden=false;go.disabled=false;go.textContent=t('dl_go')}
+}
+document.addEventListener('click',ev=>{
+  const el=ev.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
+  if(a==='del-acct'){ev.stopImmediatePropagation();deleteSheet()}
+  else if(a==='del-acct-go'){ev.stopImmediatePropagation();deleteAccount()}
+},true);
+
 /* recordatorios */
 function reminders(pets){
   const out=[];
@@ -1174,7 +1234,7 @@ function helpView(){
   let s=`<section class="hello"><h1>${t('help_t')}</h1><p>${t('help_d')}</p></section>
   ${feedbackCard()}<div class="help-intro"><span class="mark" aria-hidden="true"></span><div><b style="font-family:var(--f-display);font-size:18px">${t('help_basic')}</b><p>${t('help_basicD')}</p></div></div>`;
   s+=t('help').map(([ic,ti,sub,steps,tip],i)=>`<details class="acc" ${i===0?'open':''}><summary><span class="ticon">${I[ic]}</span><span>${ti}<small>${sub}</small></span>${chev}</summary><ol class="steps">${steps.map(x=>`<li><span>${x}</span></li>`).join('')}</ol>${tip?`<p class="tip"><b>${t('tip')}</b> ${tip}</p>`:''}</details>`).join('');
-  return s+installCard()+`<section class="sec"><div class="sec-h"><h2>${t('shot_t')}</h2></div>${sampleShot()}</section>`+arcaBadge();
+  return s+installCard()+`<section class="sec"><div class="sec-h"><h2>${t('shot_t')}</h2></div>${sampleShot()}</section>`+legalLinks()+arcaBadge();
 }
 function agendaView(){
   const rem=reminders(petsSorted());
