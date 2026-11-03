@@ -4,6 +4,7 @@
 - `netlify/functions/activate.js` — activa Premium con el código de licencia que llega por correo.
 - `netlify/functions/lemon-webhook.js` — activa Premium solo, apenas Lemon Squeezy confirma la compra.
 - `firestore.rules` — reglas de seguridad para pegar en Firestore → Reglas.
+- `storage.rules` — reglas de seguridad para pegar en Storage → Reglas (fotos de los registros).
 
 ## Variables de entorno en Netlify (Site configuration → Environment variables)
 

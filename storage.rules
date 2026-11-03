@@ -1,0 +1,21 @@
+rules_version = '2';
+// PETFILE — reglas de seguridad de Firebase Storage (Grupo ARCA)
+// Fotos de los registros: families/{familia}/pets/{mascota}/{foto}.jpg
+// Se aplican las mismas condiciones que a las mascotas en firestore.rules.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function family(fid) { return firestore.get(/databases/(default)/documents/families/$(fid)).data; }
+    function premium(f) { return f.get('paidUntil', timestamp.value(0)) > request.time; }
+    function canUse(fid) {
+      let f = family(fid);
+      return request.auth != null && request.auth.uid in f.members
+        && (f.owner == request.auth.uid || premium(f));
+    }
+    match /families/{fid}/pets/{petId}/{file} {
+      allow read, delete: if canUse(fid);
+      allow create: if canUse(fid)
+        && request.resource.size < 3 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+  }
+}

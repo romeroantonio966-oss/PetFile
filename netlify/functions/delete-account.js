@@ -50,6 +50,10 @@ const run = async (event) => {
         if (inv.exists && inv.get('familyId') === uid) await inv.ref.delete();
       }
       await db.recursiveDelete(ownRef); // mascotas, recetas, fotos y la familia
+      // Fotos de los registros en Firebase Storage.
+      try {
+        await admin.storage().bucket(process.env.FIREBASE_STORAGE_BUCKET || 'petfile-15279.firebasestorage.app').deleteFiles({ prefix: `families/${uid}/` });
+      } catch (e) { console.error('storage', e); }
     }
   }
 
