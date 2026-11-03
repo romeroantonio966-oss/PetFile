@@ -14,3 +14,10 @@
 # Notificaciones: revisa cada hora qué avisar (resumen a las 7:00 de cada persona y citas 1 hora antes).
 [functions."send-reminders"]
   schedule = "0 * * * *"
+
+# Proxy a Firebase Storage para armar el PDF con las fotos (mismo dominio, sin bloqueo CORS).
+[[redirects]]
+  from = "/fs/*"
+  to = "https://firebasestorage.googleapis.com/:splat"
+  status = 200
+  force = true

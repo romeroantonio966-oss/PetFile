@@ -4,6 +4,7 @@
 - `netlify/functions/activate.js` — activa Premium con el código de licencia que llega por correo.
 - `netlify/functions/lemon-webhook.js` — activa Premium solo, apenas Lemon Squeezy confirma la compra.
 - `firestore.rules` — reglas de seguridad para pegar en Firestore → Reglas.
+- `storage.rules` — reglas de seguridad para pegar en Storage → Reglas (fotos de los registros).
 
 ## Variables de entorno en Netlify (Site configuration → Environment variables)
 
@@ -14,3 +15,11 @@
 | `LEMON_STORE_ID` | (Opcional) El número de tu tienda en Lemon Squeezy |
 
 Nunca subas el archivo JSON de la cuenta de servicio a GitHub.
+
+## Encender las fotos en los registros (pendiente)
+
+Están apagadas porque Firebase Storage todavía no está activo. Para encenderlas:
+
+1. Pasar el proyecto a Blaze, crear Storage en `US-CENTRAL1` y pegar `storage.rules`.
+2. En `public/index.html`, poner `RECORD_PHOTOS=true`.
+3. Volver a agregar a la lista Premium el tope de 5 fotos, y revisar el texto de ayuda de Recetas y `privacidad.html`.

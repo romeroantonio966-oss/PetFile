@@ -15,37 +15,26 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <title>PETFILE</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="theme-color" content="#F4F5F7">
+<meta name="theme-color" content="#EAE0CD">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: app móvil de una columna (máx. 520px) — barra superior fija con el logo, contenido en tarjetas, barra inferior con Inicio · [+] · Agenda */
 :root{
-  --bg:#F4F5F7; --surface:#FFFFFF; --ink:#111214; --muted:#6A6F78; --line:#E3E5E9;
-  --accent:#3355F5; --accent-ink:#FFFFFF; --accent-soft:#E7ECFF;
-  --warn:#D9480F; --warn-soft:#FDEBE1; --ok:#1E8A47;
-  --t-vacuna:#1E8A6E; --t-desp:#7B5AD0; --t-cita:#3355F5; --t-med:#D9480F; --t-consulta:#8A7A18;
-  --shadow:0 1px 2px rgba(17,18,20,.05),0 8px 24px rgba(17,18,20,.07);
-  --bar:rgba(244,245,247,.86);
-  --f-display:"Fredoka",ui-rounded,"SF Pro Rounded",system-ui,sans-serif;
-  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --bg:#EAE0CD; --surface:#F7F1E5; --ink:#3D2318; --muted:#6B5546; --line:#D9CCB5;
+  --accent:#1F4FFF; --accent-ink:#FFFFFF; --accent-soft:#E2DACB;
+  --warn:#B23A14; --warn-soft:#F3D8C4; --warn-ink:#FFFFFF; --ok:#2A7A4A;
+  --t-vacuna:#1F6F58; --t-desp:#7A3F86; --t-cita:#1F4FFF; --t-med:#B23A14; --t-consulta:#7A5C0E; --t-receta:#6B3F27;
+  --shadow:0 1px 2px rgba(61,35,24,.08),0 8px 24px rgba(61,35,24,.10);
+  --bar:rgba(234,224,205,.88);
+  --f-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --f-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
   --navh:68px;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0C0D0F; --surface:#17191D; --ink:#F1F2F4; --muted:#9AA0AA; --line:#272A30;
-  --accent:#7D93FF; --accent-ink:#0B1030; --accent-soft:#1D2440;
-  --warn:#FF8A55; --warn-soft:#3A1E12; --ok:#5CCB86;
-  --t-vacuna:#4CC9A6; --t-desp:#A88BF2; --t-cita:#7D93FF; --t-med:#FF8A55; --t-consulta:#D6C65A;
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35); --bar:rgba(12,13,15,.86); color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0C0D0F; --surface:#17191D; --ink:#F1F2F4; --muted:#9AA0AA; --line:#272A30;
-  --accent:#7D93FF; --accent-ink:#0B1030; --accent-soft:#1D2440;
-  --warn:#FF8A55; --warn-soft:#3A1E12; --ok:#5CCB86;
-  --t-vacuna:#4CC9A6; --t-desp:#A88BF2; --t-cita:#7D93FF; --t-med:#FF8A55; --t-consulta:#D6C65A;
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35); --bar:rgba(12,13,15,.86); color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
@@ -77,7 +66,7 @@ main{max-width:520px;margin:0 auto;padding-block:18px calc(var(--navh) + 32px + 
 .btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
 .btn.soft{background:var(--accent-soft);color:var(--ink)}
 .btn.dark{background:var(--ink);color:var(--bg)}
-.btn.danger{background:var(--warn);color:#fff}
+.btn.danger{background:var(--warn);color:var(--warn-ink)}
 .btn.sm{min-height:36px;padding:7px 12px;font-size:13px;border-radius:11px}
 .btn.block{width:100%}
 
@@ -94,10 +83,10 @@ main{max-width:520px;margin:0 auto;padding-block:18px calc(var(--navh) + 32px + 
 .pcard:active{transform:scale(.98)}
 .pcard img,.pcard .ini{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .pcard .ini{display:grid;place-items:center;font-family:var(--f-display);font-size:64px;font-weight:700;color:var(--accent)}
-.pcard .cap{position:absolute;left:0;right:0;bottom:0;padding:34px 12px 12px;background:linear-gradient(transparent,rgba(0,0,0,.72));display:flex;flex-direction:column;gap:1px}
+.pcard .cap{position:absolute;left:0;right:0;bottom:0;padding:34px 12px 12px;background:linear-gradient(transparent,rgba(61,35,24,.72));display:flex;flex-direction:column;gap:1px}
 .pcard .n{font-family:var(--f-display);font-weight:700;font-size:19px;line-height:1.1;overflow-wrap:anywhere}
 .pcard .m{font-size:12px;opacity:.88}
-.pcard .badge{position:absolute;top:10px;left:10px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--warn);color:#fff}
+.pcard .badge{position:absolute;top:10px;left:10px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--warn);color:var(--warn-ink)}
 .pcard .badge.calm{background:rgba(255,255,255,.92);color:#111}
 .pcard.add{background:transparent;border:2px dashed var(--line);box-shadow:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-weight:700}
 .pcard.add b{font-size:36px;line-height:1;color:var(--accent);font-family:var(--f-display)}
@@ -125,7 +114,7 @@ main{max-width:520px;margin:0 auto;padding-block:18px calc(var(--navh) + 32px + 
 .hero{position:relative;border-radius:26px;overflow:hidden;aspect-ratio:1/1;max-height:420px;width:100%;max-width:100%;background:var(--accent-soft);box-shadow:var(--shadow)}
 .hero img,.hero .ini{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .hero .ini{display:grid;place-items:center;font-family:var(--f-display);font-size:120px;font-weight:700;color:var(--accent)}
-.hero .cap{position:absolute;left:0;right:0;bottom:0;padding:60px 18px 18px;background:linear-gradient(transparent,rgba(0,0,0,.75));color:#fff}
+.hero .cap{position:absolute;left:0;right:0;bottom:0;padding:60px 18px 18px;background:linear-gradient(transparent,rgba(61,35,24,.75));color:#fff}
 .hero .cap h1{font-size:34px;line-height:1.05;overflow-wrap:anywhere}
 .hero .cap .sub{font-size:14px;opacity:.9;margin-top:2px}
 .round{position:absolute;top:12px;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.92);color:#111;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.15)}
@@ -164,7 +153,7 @@ main{max-width:520px;margin:0 auto;padding-block:18px calc(var(--navh) + 32px + 
 .nb{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;font-weight:700;color:var(--muted);padding:6px 0;position:relative}
 .nb svg{width:24px;height:24px}
 .nb[aria-current="page"]{color:var(--ink)}
-.nb .dot{position:absolute;top:2px;left:calc(50% + 8px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--warn);color:#fff;font-size:10px;display:grid;place-items:center}
+.nb .dot{position:absolute;top:2px;left:calc(50% + 8px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--warn);color:var(--warn-ink);font-size:10px;display:grid;place-items:center}
 .nav .in{grid-template-columns:1fr 1fr auto 1fr 1fr!important;gap:4px}
 .right{display:flex;align-items:center;gap:10px}
 .lang{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:2px}
@@ -193,7 +182,7 @@ main{max-width:520px;margin:0 auto;padding-block:18px calc(var(--navh) + 32px + 
 .shot-in{width:100%;max-width:330px;border:8px solid var(--ink);border-radius:34px;background:var(--bg);padding:12px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow);pointer-events:none;user-select:none;text-align:left}
 .shot-hero{position:relative;aspect-ratio:16/10;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,var(--accent-soft),var(--surface));display:grid;place-items:center}
 .shot-hero .mark{width:46%;height:80%;background:var(--accent);opacity:.9}
-.shot-hero .cap{position:absolute;left:0;right:0;bottom:0;padding:24px 12px 10px;background:linear-gradient(transparent,rgba(0,0,0,.65));color:#fff;display:flex;flex-direction:column}
+.shot-hero .cap{position:absolute;left:0;right:0;bottom:0;padding:24px 12px 10px;background:linear-gradient(transparent,rgba(61,35,24,.65));color:#fff;display:flex;flex-direction:column}
 .shot-hero .cap b{font-family:var(--f-display);font-size:22px;line-height:1}
 .shot-hero .cap span{font-size:11.5px;opacity:.9}
 .shot figcaption{font-size:12.5px;color:var(--muted);text-align:center;max-width:32ch}
@@ -216,7 +205,7 @@ body.signed-out main{padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))
 main.locked{filter:blur(8px);pointer-events:none;user-select:none}
 .lock{position:fixed;inset:0;z-index:35;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28);padding-block:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow:auto}
 .lock .card{background:var(--surface);border-radius:26px;padding:22px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:12px;text-align:center;box-shadow:var(--shadow)}
-.lock .tag{align-self:center;background:var(--warn);color:#fff;font-weight:800;padding:4px 10px;border-radius:999px;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase}
+.lock .tag{align-self:center;background:var(--warn);color:var(--warn-ink);font-weight:800;padding:4px 10px;border-radius:999px;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase}
 .lock h2{font-size:24px}
 .idbox{font-family:var(--f-mono);font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;overflow-wrap:anywhere;user-select:all}
 .famcard{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px}
@@ -233,8 +222,6 @@ main.locked{filter:blur(8px);pointer-events:none;user-select:none}
 .stars button{border:0;background:none;padding:2px;color:var(--line);line-height:0}
 .stars button.on{color:#F5A524}
 :root{--gold:#93600A;--gold-soft:#FFF1D2}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--gold:#F5BC4E;--gold-soft:#3A2B0D}}
-:root[data-theme="dark"]{--gold:#F5BC4E;--gold-soft:#3A2B0D}
 .pbadge{display:inline-flex;align-items:center;font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:999px;background:var(--gold-soft);color:var(--gold);margin-left:6px;vertical-align:2px;line-height:1.4}
 .seg button.locked{color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-style:dashed}
 .seg button.locked .pbadge{margin-left:0}
@@ -307,6 +294,233 @@ label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:70
 .spinner{width:18px;height:18px;border:2.5px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .8s linear infinite;display:inline-block;vertical-align:-3px}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* === Rediseño:  Foto de perfil y acabado de vidrio. === */
+body{font-size:15.5px;letter-spacing:-.003em}
+h1,h2,h3{font-weight:700;letter-spacing:-.025em}
+.topbar{background:var(--bar);border-bottom:0}
+main{padding-block:10px calc(var(--navh) + 56px + env(safe-area-inset-bottom,0px));gap:30px}
+.sec{gap:14px}
+.sec-h h2{font-size:23px}
+.label{font-size:12.5px;font-weight:600;letter-spacing:0;text-transform:none}
+.lang{background:transparent;border:1.5px solid var(--line)}
+.lang button{font-weight:700;letter-spacing:0}
+
+.btn{border-radius:999px;font-weight:600;min-height:50px;padding:12px 22px;transition:transform .12s,background .12s}
+.btn:active,.stat:active,.pcard:active,.fab:active,.nb:active{transform:scale(.97)}
+.btn.ghost{border:1.5px solid var(--line);background:transparent}
+.btn.sm{border-radius:999px;min-height:38px}
+.lnk{font-weight:600}
+
+.hello h1{font-size:42px;line-height:1;letter-spacing:-.035em}
+.hello p{margin-top:8px;font-size:16px}
+
+/* resumen: una sola franja en chocolate */
+.stats{gap:0;background:var(--ink);border-radius:26px;padding:6px}
+.stat{background:transparent;border:0;border-radius:20px;padding:14px;color:var(--bg);gap:6px}
+.stat+.stat{border-left:1px solid rgba(234,224,205,.16);border-radius:0}
+.stat b{font-size:36px;font-weight:700;letter-spacing:-.03em}
+.stat span{color:rgba(234,224,205,.72);font-weight:500;font-size:12.5px}
+.stat.alert b{color:#FFA57C}
+
+/* listas */
+.list{background:var(--surface);border:0;border-radius:24px}
+.rem{padding:14px 16px;border-top:0;position:relative}
+.rem+.rem::before{content:"";position:absolute;left:70px;right:16px;top:0;height:1px;background:var(--line)}
+.av{border-radius:50%;background:var(--accent);color:var(--bg)}
+.rem .t{font-weight:600}
+.chip{font-family:var(--f-body);font-weight:600;font-size:12px;padding:4px 10px}
+.mini button{font-weight:600}
+.group-t{font-size:15px;font-weight:600;color:var(--ink)}
+.empty{border:0;border-radius:28px}
+
+/* ficha */
+.facts{gap:0;background:var(--surface);border-radius:24px;padding:4px 16px;grid-template-columns:1fr 1fr}
+.fact{background:transparent;border:0;border-radius:0;padding:12px 0;gap:3px}
+.fact:nth-child(n+3){border-top:1px solid var(--line)}
+.fact .v{font-size:16px;font-weight:600}
+.reader{border-radius:24px}
+
+.tabs{gap:6px}
+.tab{border:0;background:var(--surface);font-weight:600;padding:9px 15px}
+.tab[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+
+/* historial: línea de tiempo real */
+.timeline{gap:0;position:relative}
+.timeline::before{content:"";position:absolute;left:21px;top:16px;bottom:16px;width:2px;background:var(--line)}
+.entry{position:relative;background:transparent;border:0;border-radius:0;padding:12px 0;grid-template-columns:44px 1fr;gap:14px}
+.entry .ticon{width:44px;height:44px;border-radius:50%;background:var(--tc);color:#fff;box-shadow:0 0 0 5px var(--bg)}
+.entry .ty{font-size:13px;font-weight:600;letter-spacing:0;text-transform:none}
+.entry .d{font-family:var(--f-body);font-size:13px}
+.entry .tt{font-size:18px;font-weight:600;letter-spacing:-.012em}
+.entry .acts button.t{font-weight:600}
+
+/* ayuda */
+.help-intro{border-radius:26px}
+.acc{border:0;border-radius:22px}
+.acc summary{font-weight:600}
+.acc .ticon{background:var(--accent);color:#fff;border-radius:50%}
+.steps li::before{background:var(--accent);color:#fff}
+.helpcta{border-radius:22px;background:var(--surface)}
+
+/* barra inferior flotante */
+.nav{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));max-width:496px;margin:0 auto;padding:0;background:var(--ink);border:0;border-radius:30px;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 12px 30px rgba(61,35,24,.28)}
+.nav .in{padding:0 6px;height:66px}
+.nb{color:rgba(234,224,205,.62);font-weight:500;font-size:11px;transition:color .15s}
+.nb[aria-current="page"]{color:var(--bg);font-weight:600}
+.nb .dot{box-shadow:0 0 0 2px var(--ink);font-weight:700}
+.fab{width:52px;height:52px;border-radius:50%;background:var(--accent);color:#fff;margin:0 4px;box-shadow:none}
+.toast{border-radius:999px;bottom:calc(var(--navh) + 30px + env(safe-area-inset-bottom,0px))}
+
+/* hojas y formularios */
+.scrim{background:rgba(61,35,24,.5)}
+.sheet{border-radius:32px 32px 0 0;background:var(--surface)}
+.sheet h2{font-size:27px}
+label.f{font-weight:600;color:var(--ink)}
+.f input,.f select,.f textarea{border:1.5px solid var(--line);background:#FFFDF8;border-radius:14px}
+.f input:focus,.f select:focus,.f textarea:focus{outline:0;border-color:var(--accent)}
+.seg button{background:transparent;border:1.5px solid var(--line);font-weight:600;border-radius:999px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.types button{border:0;background:var(--bg);border-radius:22px;font-weight:600}
+.types .ticon{border-radius:50%;background:var(--tc);color:#fff}
+.types button.wide{background:var(--ink)}
+.photo-pick .ph{border-radius:50%}
+.shot-in{border-color:var(--ink);border-radius:36px}
+.shot-hero{background:var(--accent)}
+.shot-hero .mark{background:var(--bg);opacity:1}
+.shot .entry{background:var(--surface)!important;border-radius:14px!important;padding:10px!important}
+.shot .entry .ticon{box-shadow:none;width:30px;height:30px}
+@media (max-width:360px){.hello h1{font-size:36px}.nb{font-size:10px}}
+
+/* === acabados con brillo === */
+:root{--glass:linear-gradient(180deg,rgba(255,255,255,.78),rgba(255,255,255,.48));--glass-edge:inset 0 1px 0 rgba(255,255,255,.95),0 1px 2px rgba(61,35,24,.05),0 16px 32px -18px rgba(61,35,24,.3);--gloss:linear-gradient(165deg,#3F68FF 0%,#1F4FFF 52%,#1740DE 100%);--gloss-edge:inset 0 1px 0 rgba(255,255,255,.45),0 10px 24px -8px rgba(31,79,255,.6)}
+body{background:radial-gradient(90% 46% at 92% -4%,rgba(31,79,255,.17),transparent 70%),radial-gradient(80% 42% at -8% 46%,rgba(255,255,255,.75),transparent 72%),radial-gradient(90% 40% at 104% 96%,rgba(61,35,24,.1),transparent 70%),#EAE0CD;background-attachment:fixed}
+.topbar{background:rgba(234,224,205,.6);-webkit-backdrop-filter:blur(20px) saturate(1.5);backdrop-filter:blur(20px) saturate(1.5)}
+.list,.facts,.acc,.empty,.helpcta,.tab,.pcard:not(.add){background:var(--glass);border:1px solid rgba(255,255,255,.6);box-shadow:var(--glass-edge);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.btn:not(.ghost):not(.soft):not(.dark):not(.danger),.tab[aria-pressed="true"],.seg button[aria-pressed="true"]{background:var(--gloss);color:#fff;border-color:transparent;box-shadow:var(--gloss-edge)}
+.btn.dark{background:linear-gradient(165deg,#5A3726,#3D2318);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 10px 22px -10px rgba(61,35,24,.6)}
+.btn.soft{background:var(--glass);box-shadow:var(--glass-edge)}
+.stats{position:relative;overflow:hidden;background:linear-gradient(160deg,#5C3826,#3D2318 62%,#2F1A11);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 20px 34px -18px rgba(61,35,24,.7)}
+.stats::before{content:"";position:absolute;inset:0 0 auto;height:46%;background:linear-gradient(180deg,rgba(255,255,255,.1),transparent);pointer-events:none}
+
+/* mascotas: foto de perfil */
+.pets{gap:12px}
+.pets>.pcard{aspect-ratio:auto}
+.pcard:not(.add){display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:12px;padding:20px 10px 16px;border-radius:26px;color:var(--ink);text-align:center;overflow:visible}
+.pcard:not(.add) img,.pcard:not(.add) .ini{position:relative;inset:auto;flex:none;width:104px;height:104px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 3px #fff,0 0 0 6px #1F4FFF,0 12px 24px -4px rgba(31,79,255,.5)}
+.pcard .ini{background:var(--gloss);color:var(--bg);font-size:44px;display:grid;place-items:center}
+.pcard:not(.add) .cap{position:static;background:none;padding:0;align-items:center;gap:2px}
+.pcard .n{font-size:21px;letter-spacing:-.02em}
+.pcard .m{font-size:12.5px;color:var(--muted);opacity:1}
+.pcard .badge{position:static;order:3;font-weight:600;font-size:12px;padding:4px 10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.pcard:has(.badge) img,.pcard:has(.badge) .ini{box-shadow:0 0 0 3px #fff,0 0 0 6px var(--warn),0 12px 24px -4px rgba(178,58,20,.45)!important}
+.pcard.add{min-height:200px;flex-direction:column;border-radius:26px;border:1.5px dashed #BDAE94;background:rgba(255,255,255,.22);font-weight:600}
+
+/* ficha: encabezado de perfil */
+.hero{overflow:visible;aspect-ratio:auto;max-height:none;display:flex;flex-direction:column;align-items:center;padding:30px 18px 24px;border-radius:32px;background:var(--gloss);box-shadow:var(--gloss-edge),0 26px 40px -22px rgba(31,79,255,.75)}
+.hero::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 70% at 18% -8%,rgba(255,255,255,.34),transparent 58%);pointer-events:none}
+.hero img,.hero .ini{position:relative;inset:auto;width:150px;height:150px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 4px #EAE0CD,0 18px 34px -6px rgba(10,20,90,.65)}
+.hero .ini{background:rgba(255,255,255,.14);color:var(--bg);display:grid;place-items:center;font-size:64px}
+.hero .cap{position:relative;background:none;padding:14px 0 0;text-align:center}
+.hero .cap h1{font-size:38px;letter-spacing:-.03em}
+.round{z-index:2;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.4);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.camera{position:absolute;z-index:2;top:136px;left:calc(50% + 34px);width:44px;height:44px;border-radius:50%;border:3px solid #1F4FFF;background:#EAE0CD;color:var(--ink);display:grid;place-items:center;padding:0}
+.camera svg{width:19px;height:19px}
+
+.av{background:var(--gloss);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+img.av{box-shadow:0 0 0 2px #fff,0 0 0 3.5px #1F4FFF}
+.entry .ticon,.types .ticon{background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 76%,#fff),var(--tc) 70%);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 0 0 5px #EAE0CD}
+.types .ticon{box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
+.chip{box-shadow:inset 0 1px 0 rgba(255,255,255,.55)}
+.nav{background:rgba(61,35,24,.84);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 18px 36px -10px rgba(61,35,24,.55)}
+.fab{background:var(--gloss);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 6px 18px rgba(31,79,255,.65)}
+.sheet{background:linear-gradient(180deg,#FBF7EE,#F4ECDD)}
+.types button{background:var(--glass);border:1px solid rgba(255,255,255,.7);box-shadow:var(--glass-edge)}
+
+/* exportar */
+.hist-acts{display:flex;gap:16px;align-items:baseline}
+#printdoc{display:none}
+@media print{
+ @page{margin:14mm}
+ html,body{background:#fff!important}
+ body>*:not(#printdoc){display:none!important}
+ #printdoc{display:block;color:#3D2318;font:11pt "Instrument Sans",Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .pd-h{display:flex;gap:16px;align-items:center;background:#1F4FFF;color:#fff;padding:16px 18px;border-radius:14px;margin-bottom:14px}
+ .pd-h img{width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid #EAE0CD}
+ .pd-h small{display:block;font-size:10pt}
+ .pd-h b{display:block;font:700 22pt "Bricolage Grotesque",Arial,sans-serif}
+ .pd-r{display:grid;grid-template-columns:30mm 1fr;gap:10px;padding:9px 0;border-bottom:1px solid #D9CCB5;break-inside:avoid}
+ .pd-r .d{color:#6B5546;font-size:10pt}
+ .pd-r .y{font-weight:600;font-size:9.5pt}
+ .pd-r .tt{font-weight:700;font-size:12pt}
+ .pd-r .m{color:#6B5546;font-size:10pt}
+ .pd-f{margin-top:12px;color:#6B5546;font-size:9pt}
+}
+
+/* fechas y hojas: que nada se encime */
+.sheet>*{flex-shrink:0}
+.fields{grid-auto-rows:auto;align-items:start}
+.f input[type=date],.f input[type=datetime-local]{-webkit-appearance:none;appearance:none;display:block;width:100%;max-width:100%;min-width:0;min-height:50px;line-height:24px;text-align:left}
+.f input::-webkit-date-and-time-value{text-align:left;min-height:24px}
+
+/* fotos de papeles */
+.ph-hint{font-weight:500;font-size:13px;color:var(--muted);margin-top:-2px}
+.ph-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ph-t{position:relative;aspect-ratio:1;border-radius:14px}
+.ph-t img{width:100%;height:100%;object-fit:cover;border-radius:14px;display:block;box-shadow:0 0 0 1px rgba(61,35,24,.12)}
+.ph-x{position:absolute;top:-6px;right:-6px;width:28px;height:28px;border-radius:50%;border:2px solid #FBF7EE;background:var(--ink);color:#fff;font-size:15px;line-height:1;padding:0;display:grid;place-items:center}
+.ph-add{aspect-ratio:1;border-radius:14px;border:1.5px dashed #BDAE94;color:var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12.5px;font-weight:600;cursor:pointer;text-align:center;padding:6px}
+.ph-add svg{width:24px;height:24px}
+.thumbs{display:flex;gap:8px;overflow-x:auto;margin-top:6px;scrollbar-width:none}
+.thumbs::-webkit-scrollbar{display:none}
+.thumbs button{flex:none;width:76px;height:76px;padding:0;border:0;background:none;border-radius:14px}
+.thumbs img{width:100%;height:100%;object-fit:cover;border-radius:14px;box-shadow:0 0 0 1px rgba(61,35,24,.12),0 6px 14px -6px rgba(61,35,24,.4)}
+.viewer{position:fixed;inset:0;z-index:50;background:rgba(30,16,10,.94);display:flex;flex-direction:column;animation:fd .18s ease}
+.viewer .track{flex:1;min-height:0;display:flex;overflow-x:auto;scroll-snap-type:x mandatory}
+.viewer .slide{flex:none;width:100%;display:grid;place-items:center;padding:16px;scroll-snap-align:center}
+.viewer img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px}
+.viewer .vclose{margin:0 16px calc(16px + env(safe-area-inset-bottom,0px));background:var(--bg);color:var(--ink)}
+.pd-att{display:none}
+@media print{.pd-att{display:block;break-before:page}.pd-att img{display:block;max-width:100%;max-height:225mm;margin-top:8px}.pd-att b{font-size:12pt}.pd-r .has{color:#1F4FFF;font-size:10pt;font-weight:600}}
+div.f:has(.ph-grid){display:flex;flex-direction:column;gap:8px}
+
+/* fotos a la derecha en el historial */
+.entry:has(.thumbs) .body{display:grid;grid-template-columns:minmax(0,1fr) 72px;column-gap:12px;align-content:start}
+.entry:has(.thumbs) .body>*{grid-column:1}
+.entry:has(.thumbs) .body>.thumbs{grid-column:2;grid-row:1/span 8;align-self:start;margin:2px 0 0;display:block;overflow:visible}
+.entry:has(.thumbs) .head{flex-direction:column;gap:0}
+.thumbs button{width:72px;height:72px;position:relative;display:block}
+.thumbs button:nth-child(n+2){display:none}
+.thumbs .more{position:absolute;right:5px;bottom:5px;min-width:24px;height:24px;padding:0 6px;border-radius:999px;background:rgba(61,35,24,.86);color:#fff;font-size:12px;font-weight:600;display:grid;place-items:center}
+
+/* === piezas de la app real: cuenta, familia, Premium, instalación === */
+.acct{background:linear-gradient(165deg,#5A3726,#3D2318);color:var(--bg);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 4px 10px -3px rgba(61,35,24,.5)}
+.iconbtn{background:var(--glass);border:1px solid rgba(255,255,255,.6);box-shadow:var(--glass-edge)}
+.iconbtn[aria-current="page"]{background:var(--gloss);color:#fff;border-color:transparent}
+.install,.famcard,.ntcard,.rclock,.rcitem,.keybox,.invbox{background:var(--glass);border:1px solid rgba(255,255,255,.6);box-shadow:var(--glass-edge);border-radius:22px}
+.rclock,.keybox{border:1.5px dashed #BDAE94;box-shadow:none}
+.rcitem{overflow:hidden;border-radius:16px}
+.trial{background:var(--glass);box-shadow:var(--glass-edge);border-radius:20px}
+.trial.free,.prembox{background:linear-gradient(170deg,#FFF6DF,#FBE8BF);box-shadow:inset 0 1px 0 rgba(255,255,255,.9);border-radius:20px}
+.lock{background:rgba(61,35,24,.42)}
+.lock .card{border-radius:30px;background:linear-gradient(180deg,#FBF7EE,#F4ECDD)}
+.lock .tag{font-weight:600;letter-spacing:0;text-transform:none}
+.pbadge{font-weight:700;font-size:10px;letter-spacing:0;text-transform:none;padding:2px 7px}
+.arca small{font-weight:600;letter-spacing:0;text-transform:none;font-size:12px}
+.tagsm{font-weight:600}
+.codebig{font-family:var(--f-display);font-weight:700;letter-spacing:.14em}
+.idbox,.keybox input{font-family:var(--f-body)}
+.fav{background:var(--gloss);color:#fff;border-color:#F7F1E5}
+.auth h1{font-size:32px;letter-spacing:-.03em}
+.pw button{background:transparent}
+.seg button.locked,.types button.lockedt{border:1.5px dashed #BDAE94;background:transparent;box-shadow:none}
+.lockfield{border:1.5px dashed #BDAE94;background:transparent;border-radius:14px}
+.ph-busy{opacity:.55;pointer-events:none}
+label.f[hidden]{display:none}
+.rem .side{max-width:128px}
+.mini{flex-wrap:wrap;justify-content:flex-end;gap:4px 10px}
+.mini .pbadge{margin-left:3px}
+.famcard .favs .fav{color:#fff}
 </style>
 
 </head>
@@ -384,7 +598,7 @@ es:{
    ['cal','Citas','Veterinario, grooming, controles',['Tocá <span class="kbd">+</span> y elegí <b>Cita</b>.','Escribí el motivo, la fecha y la hora, y la clínica o el veterinario.','La cita aparece en Pendiente y en la Agenda hasta que pase o la marques como lista.'],'Después de la cita, agregá una <b>Consulta</b> con el diagnóstico para que quede en el historial.'],
    ['pill','Medicamentos y consultas','Tratamientos, diagnósticos, exámenes',['<b>Medicamento</b>: nombre, dosis (ej. 1 tableta), frecuencia (ej. cada 12 horas), fecha de inicio y fecha en que termina.','Los tratamientos activos se cuentan en Inicio, y tres días antes de terminar aparecen en la Agenda.','<b>Consulta</b>: para diagnósticos, resultados de exámenes, cirugías o cualquier nota médica.'],''],
    ['scan','Escanear una receta','La app lee la receta por vos',['En el expediente, tocá <b>Escanear</b> (o <span class="kbd">+</span> y luego <b>Escanear una receta</b>).','Tomá una foto de la receta: la hoja completa, plana y con buena luz.','En unos segundos aparece la lista de medicamentos con dosis, frecuencia y duración.','Revisá cada uno contra la receta, desmarcá lo que no quieras guardar y confirmá la fecha de inicio.','Tocá <b>Guardar en el historial</b>. Cada medicamento queda registrado y lo podés editar.'],'La primera vez se te pide permiso para que la app lea la imagen. Siempre compará con la receta original antes de guardar.'],
-   ['cal','Agenda y recordatorios','Que no se te pase nada',['La pestaña <b>Agenda</b> junta lo pendiente de todas tus mascotas: vencidos, próximos 7 días, este mes y más adelante.','Cuando algo ya se hizo, tocá <b>Listo</b> y sale de la lista.','Tocá <b>Calendario</b> para pasarlo al calendario de tu teléfono, con aviso un día antes. Con <b>Pasar todo al calendario</b> lo hacés de una vez.','El número rojo sobre Agenda indica cuántas cosas están vencidas.'],'Los avisos llegan por el calendario del teléfono, así que conviene pasar ahí las fechas importantes.'],
+   ['cal','Agenda y recordatorios','Que no se te pase nada',['La pestaña <b>Agenda</b> junta lo pendiente de todas tus mascotas: vencidos, próximos 7 días, este mes y más adelante.','Cuando algo ya se hizo, tocá <b>Listo</b> y sale de la lista.','El número rojo sobre Agenda indica cuántas cosas están vencidas.'],'Con Premium, PETFILE te avisa en el celular.'],
    ['steth','Editar o eliminar','Corregir errores',['Para corregir un registro, tocá <b>Editar</b> debajo de él.','Para borrarlo, tocá <b>Eliminar</b> y confirmá.','Para eliminar una mascota completa, entrá a su expediente, tocá el lápiz y abajo <b>Eliminar mascota</b>. Se borra todo su historial y no se puede deshacer.'],''],
    ['shield','Idioma, datos y pantalla de inicio','Configuración',['Arriba a la derecha cambiás el idioma entre <b>ES</b> (español) y <b>EN</b> (inglés).','Al lado ves si los datos están <b>Sincronizados</b> (guardados en tu cuenta) o solo <b>En este teléfono</b>.','En iPhone: abrí la app en Safari, tocá Compartir y luego <b>Agregar a pantalla de inicio</b>.','En Android: abrí la app en Chrome, tocá el menú ⋮ y luego <b>Agregar a la pantalla principal</b>.'],'Así PETFILE queda como un ícono más en tu teléfono.']
   ]
@@ -434,23 +648,33 @@ en:{
    ['cal','Appointments','Vet, grooming, checkups',['Tap <span class="kbd">+</span> and choose <b>Appointment</b>.','Enter the reason, date and time, and the clinic or vet.','It shows in To do and in the Schedule until it passes or you mark it done.'],'After the appointment, add a <b>Visit</b> with the diagnosis so it stays in the history.'],
    ['pill','Medications and visits','Treatments, diagnoses, tests',['<b>Medication</b>: name, dose (e.g. 1 tablet), frequency (e.g. every 12 hours), start date and end date.','Active treatments are counted on Home, and three days before they end they show up in the Schedule.','<b>Visit</b>: for diagnoses, test results, surgeries or any medical note.'],''],
    ['scan','Scan a prescription','The app reads it for you',['In the pet file, tap <b>Scan</b> (or <span class="kbd">+</span> and then <b>Scan a prescription</b>).','Take a photo of the prescription: the whole page, flat and well lit.','In a few seconds you get the list of medications with dose, frequency and duration.','Check each one against the prescription, untick anything you don\'t want and confirm the start date.','Tap <b>Save to history</b>. Each medication is logged and you can edit it.'],'The first time, you\'re asked to allow the app to read the image. Always compare with the original before saving.'],
-   ['cal','Schedule and reminders','So nothing slips',['The <b>Schedule</b> tab gathers what\'s pending for all your pets: overdue, next 7 days, this month and later.','When something is done, tap <b>Done</b> and it leaves the list.','Tap <b>Calendar</b> to add it to your phone calendar, with an alert one day before. <b>Add everything to my phone calendar</b> does them all at once.','The red number on Schedule shows how many items are overdue.'],"Alerts come from your phone's calendar, so add the important dates there."],
+   ['cal','Schedule and reminders','So nothing slips',['The <b>Schedule</b> tab gathers what\'s pending for all your pets: overdue, next 7 days, this month and later.','When something is done, tap <b>Done</b> and it leaves the list.','The red number on Schedule shows how many items are overdue.'],'With Premium, PETFILE alerts you on your phone.'],
    ['steth','Edit or delete','Fix mistakes',['To fix a record, tap <b>Edit</b> under it.','To remove it, tap <b>Delete</b> and confirm.','To delete a whole pet, open their file, tap the pencil and then <b>Delete pet</b> at the bottom. All their history is erased and it can\'t be undone.'],''],
    ['shield','Language, data and home screen','Settings',['At the top right, switch the language between <b>ES</b> (Spanish) and <b>EN</b> (English).','Next to it you can see whether your data is <b>Synced</b> (saved to your account) or only <b>On this phone</b>.','On iPhone: open the app in Safari, tap Share, then <b>Add to Home Screen</b>.','On Android: open the app in Chrome, tap the ⋮ menu, then <b>Add to Home screen</b>.'],'That way PETFILE sits on your phone like any other app icon.']
   ]
 }};
+
+const _svg=d=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
+I.camera=_svg('<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>');
+I.printer=_svg('<path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/>');
+I.filedown=_svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 12v6M9 15l3 3 3-3"/>');
+S.es.types.receta={label:'Receta',plural:'Recetas',hint:'Motivo, fecha y veterinario',titleL:'Motivo',titlePh:'Ej. Otitis, control anual',dateL:'Fecha'};S.en.types.receta={label:'Prescription',plural:'Prescriptions',hint:'Reason, date and vet',titleL:'Reason',titlePh:'E.g. Ear infection, annual checkup',dateL:'Date'};
+Object.assign(S.es,{ef_obs:'Observaciones',ph_t:'Fotos de recetas o papeles',ph_d:'Guardá aquí lo que te dio el veterinario: dosis, tratamientos, indicaciones.',ph_add:'Agregar foto',ph_rm:'Quitar foto',ph_view:'Ver foto',ph_max:'Máximo 6 fotos por registro.',ph_up:'Subiendo fotos…',ph_err:'No se pudieron subir las fotos. Revisá la conexión e intentá de nuevo.',ph_att:'Documentos adjuntos',ph_n:n=>n+(n>1?' fotos adjuntas':' foto adjunta'),close:'Cerrar',exp_btn:'Exportar',exp_t:'Exportar historial',exp_print:'Imprimir',exp_printD:'O guardar como PDF desde el menú de impresión',exp_pdf:'Descargar PDF',exp_pdfD:'Un archivo listo para enviar al veterinario',exp_doc:'Historial médico',exp_by:'Creado con PETFILE por Grupo ARCA',exp_gen:'Generado el',exp_page:'Página',exp_ok:'PDF listo',exp_err:'No se pudo crear el PDF. Probá con Imprimir.',prem_export:'Exportar e imprimir el historial es Premium.',ph_free:'La versión gratis permite 5 fotos. Con Premium no hay tope.',prem_photo:'La foto de perfil de tu mascota es Premium.',pf_other:'¿Qué especie es?',pf_otherPh:'Ej. Tortuga, hámster, iguana'});Object.assign(S.en,{ef_obs:'Notes',ph_t:'Photos of prescriptions or papers',ph_d:'Keep what your vet gave you here: doses, treatments, instructions.',ph_add:'Add photo',ph_rm:'Remove photo',ph_view:'View photo',ph_max:'Up to 6 photos per record.',ph_up:'Uploading photos…',ph_err:'Could not upload the photos. Check your connection and try again.',ph_att:'Attached documents',ph_n:n=>n+(n>1?' photos attached':' photo attached'),close:'Close',exp_btn:'Export',exp_t:'Export history',exp_print:'Print',exp_printD:'Or save as PDF from the print menu',exp_pdf:'Download PDF',exp_pdfD:'A file ready to send to your vet',exp_doc:'Medical history',exp_by:'Made with PETFILE by Grupo ARCA',exp_gen:'Generated on',exp_page:'Page',exp_ok:'PDF ready',exp_err:'Could not create the PDF. Try Print instead.',prem_export:'Exporting and printing the history is Premium.',ph_free:'The free version allows 5 photos. Premium has no limit.',prem_photo:"Your pet's profile photo is Premium.",pf_other:'What species is it?',pf_otherPh:'E.g. Turtle, hamster, iguana'});
+/* Fotos en registros: apagadas hasta activar Firebase Storage. Para encenderlas: true (ver LEEME.md). */
+const RECORD_PHOTOS=false;
 const LANGKEY='petfile-lang';
 let lang=(()=>{try{const v=localStorage.getItem(LANGKEY);if(v==='es'||v==='en')return v}catch(e){}return (navigator.language||'es').toLowerCase().startsWith('es')?'es':'en'})();
 const t=(k,...a)=>{const v=S[lang][k];return typeof v==='function'?v(...a):v};
-const TYPE_META={vacuna:{icon:'syringe',color:'--t-vacuna',fields:['title','date','next','vet','notes']},desp:{icon:'shield',color:'--t-desp',fields:['title','date','next','vet','notes']},cita:{icon:'cal',color:'--t-cita',fields:['title','datetime','vet','notes']},med:{icon:'pill',color:'--t-med',fields:['title','dose','freq','date','end','notes']},consulta:{icon:'steth',color:'--t-consulta',fields:['title','date','vet','notes']}};
+const TYPE_META={vacuna:{icon:'syringe',color:'--t-vacuna',fields:['title','date','next','vet','notes']},desp:{icon:'shield',color:'--t-desp',fields:['title','date','next','vet','notes']},cita:{icon:'cal',color:'--t-cita',fields:['title','datetime','vet','notes']},med:{icon:'pill',color:'--t-med',fields:['title','dose','freq','date','end','notes']},consulta:{icon:'steth',color:'--t-consulta',fields:['title','date','vet','notes']},receta:{icon:'scan',color:'--t-receta',fields:['title','date','vet','notes']}};
 const TT=k=>Object.assign({},TYPE_META[k]||TYPE_META.consulta,S[lang].types[k]||S[lang].types.consulta);
 const SPECIES=['Perro','Gato','Conejo','Ave','Otro'],SEXES=['Macho','Hembra','Macho castrado','Hembra castrada'];
 const normSex=s=>s==='Hembra esterilizada'?'Hembra castrada':(s||'');
 const spL=s=>S[lang].species[s]||s||'';const sxL=s=>S[lang].sexes[normSex(s)]||normSex(s);
 let isPremium=()=>true;
-const FREE={species:['Perro','Gato'],sex:['Macho','Hembra']};
+const FREE={species:['Perro','Gato','Conejo']};
 const premOk=(k,v)=>isPremium()||!FREE[k]||FREE[k].includes(v);
 const FREE_PETS=1;
+const spOf=p=>p.species==='Otro'&&p.speciesOther?p.speciesOther:spL(p.species);
 const petLimit=()=>!isPremium()&&Object.keys(state.pets).length>=FREE_PETS;
 const PBADGE=()=>`<span class="pbadge">${t('premium')}</span>`;
 const lockBtn=(label,into)=>`<button type="button" class="locked" data-act="premium" data-into="${into}">${esc(label)}${PBADGE()}</button>`;
@@ -497,7 +721,7 @@ Object.assign(S.es,{
   fam_e_code:'No encontramos ese código. Revisalo e intentá de nuevo.',fam_e_full:'No se pudo unir: esa familia ya tiene 6 personas o no tiene Premium activo. Pedile a quien te invitó que lo revise.',fam_e_owner:'Primero quitá a las otras personas de tu familia para poder unirte a otra.',fam_e_same:'Ya sos parte de esa familia.',
   fam_payer:n=>`La licencia la paga ${n}, el administrador de la familia.`,fam_lockMember:n=>`La licencia de tu familia venció. Pedile a ${n} que la renueve, o salí de la familia para volver a tu cuenta.`,
   ac_key:'¿Ya compraste? Activá tu licencia',ac_keyD:'Pegá el código de licencia que te llegó al correo después de la compra.',ac_keyPh:'Código de licencia',ac_keyBtn:'Activar',ac_keyOk:'¡Listo! Ya tenés Premium.',ac_keyBad:'Ese código no es válido. Revisalo en el correo de la compra.',ac_keyUsed:'Ese código ya se activó en otra cuenta. Escribinos si necesitás ayuda.',ac_keyExp:'Ese código está vencido o fue reembolsado.',ac_keyFail:'No se pudo activar ahora. Intentá de nuevo en unos minutos.',prem_have:'¿Ya compraste? Activá tu código',
-  nav_family:'Familia',help_btn:'Ayuda',premium:'Premium',prem_t:'Función Premium',prem_see:'Ver Premium',prem_d:'Un solo pago de ₡5.000, para siempre y para toda tu familia. Desbloqueás:',prem_list:['Mascotas sin límite (la versión gratis permite 1)','Foto de perfil de cada mascota','Todas las especies: conejo, ave y otras','Macho castrado y hembra castrada','Fecha de nacimiento con edad automática','Medicamentos y tratamientos','Recordatorios en el calendario del teléfono','Invitar a tu familia (hasta 6 personas)','Muy pronto: lector de recetas'],prem_pets:'La versión gratis permite 1 mascota.',prem_cal:'Pasar los recordatorios al calendario del teléfono es Premium.',prem_med:'Registrar medicamentos y tratamientos es Premium.',fam_inviteLocked:'Compartir las mascotas con tu familia es parte de Premium.',
+  nav_family:'Familia',help_btn:'Ayuda',premium:'Premium',prem_t:'Función Premium',prem_see:'Ver Premium',prem_d:'Un solo pago de ₡5.000, para siempre y para toda tu familia. Desbloqueás:',prem_list:['Mascotas sin límite (la versión gratis permite 1)','Exportar el historial en PDF o imprimirlo','Todas las especies: conejo, ave y otras','Macho castrado y hembra castrada','Fecha de nacimiento con edad automática','Medicamentos y tratamientos','Invitar a tu familia (hasta 6 personas)','Muy pronto: lector de recetas'],prem_pets:'La versión gratis permite 1 mascota.',prem_cal:'Pasar los recordatorios al calendario del teléfono es Premium.',prem_med:'Registrar medicamentos y tratamientos es Premium.',fam_inviteLocked:'Compartir las mascotas con tu familia es parte de Premium.',
   fam_inviteText:(code,link)=>`Te invito a mi familia en PETFILE para llevar juntos el registro de nuestras mascotas.\nCódigo: ${code}\n${link}`,fam_copiedInv:'Invitación copiada'
 });
 Object.assign(S.en,{
@@ -515,10 +739,9 @@ Object.assign(S.en,{
   fam_e_code:"We couldn't find that code. Check it and try again.",fam_e_full:"Couldn't join: that family already has 6 people or doesn't have Premium active. Ask whoever invited you to check.",fam_e_owner:'First remove the other people from your family to join another one.',fam_e_same:"You're already part of that family.",
   fam_payer:n=>`The license is paid by ${n}, the family admin.`,fam_lockMember:n=>`Your family's license expired. Ask ${n} to renew it, or leave the family to go back to your account.`,
   ac_key:'Already bought it? Activate your license',ac_keyD:'Paste the license code you got by email after your purchase.',ac_keyPh:'License code',ac_keyBtn:'Activate',ac_keyOk:"Done! You have Premium now.",ac_keyBad:"That code isn't valid. Check it in your purchase email.",ac_keyUsed:'That code was already activated on another account. Email us if you need help.',ac_keyExp:'That code has expired or was refunded.',ac_keyFail:"Couldn't activate it right now. Try again in a few minutes.",prem_have:'Already bought it? Activate your code',
-  nav_family:'Family',help_btn:'Help',premium:'Premium',prem_t:'Premium feature',prem_see:'See Premium',prem_d:'One payment of ₡5,000, forever and for your whole family. You unlock:',prem_list:['Unlimited pets (the free version allows 1)','Profile photo for each pet','Every species: rabbit, bird and more','Neutered male and spayed female','Date of birth with automatic age','Medications and treatments','Reminders in your phone calendar','Invite your family (up to 6 people)','Coming soon: prescription reader'],prem_pets:'The free version allows 1 pet.',prem_cal:'Adding reminders to your phone calendar is Premium.',prem_med:'Logging medications and treatments is Premium.',fam_inviteLocked:'Sharing the pets with your family is part of Premium.',
+  nav_family:'Family',help_btn:'Help',premium:'Premium',prem_t:'Premium feature',prem_see:'See Premium',prem_d:'One payment of ₡5,000, forever and for your whole family. You unlock:',prem_list:['Unlimited pets (the free version allows 1)','Export the history as PDF or print it','Every species: rabbit, bird and more','Neutered male and spayed female','Date of birth with automatic age','Medications and treatments','Invite your family (up to 6 people)','Coming soon: prescription reader'],prem_pets:'The free version allows 1 pet.',prem_cal:'Adding reminders to your phone calendar is Premium.',prem_med:'Logging medications and treatments is Premium.',fam_inviteLocked:'Sharing the pets with your family is part of Premium.',
   fam_inviteText:(code,link)=>`Join my family on PETFILE so we can keep our pets' records together.\nCode: ${code}\n${link}`,fam_copiedInv:'Invite copied'
 });
-[S.es,S.en].forEach((L,i)=>{const it=L.help.find(h=>h[0]==='pill');if(it)it[4]=i===0?'Registrar medicamentos es parte de Premium. Vacunas, desparasitaciones, citas y consultas son gratis.':'Logging medications is part of Premium. Vaccines, deworming, appointments and visits are free.'});
 // Ayuda: sin lector de recetas en esta versión; tema de familia; el último tema habla de la cuenta.
 S.es.help.splice(5,1);S.en.help.splice(5,1);
 S.es.help.splice(S.es.help.length-1,0,['paw','Compartir con tu familia','Varias cuentas, las mismas mascotas',['Abrí la pestaña <b>Familia</b>, en la barra de abajo.','Tocá <b>Compartir invitación</b> y mandale el enlace o el código a la otra persona.','Esa persona crea su cuenta con su correo y entra con el enlace, o en Mi familia toca <b>Unirme a otra familia</b> y escribe el código.','Desde ese momento todos ven y editan las mismas mascotas, y los cambios aparecen al instante en todos los teléfonos.','El administrador puede quitar personas o cambiar el código. Los demás pueden salir cuando quieran.'],`Invitar es parte de Premium. Solo el administrador paga la licencia, y cubre a toda la familia (hasta ${MAX_FAMILY} personas).`]);
@@ -835,7 +1058,7 @@ document.addEventListener('click',ev=>{
   const stop=()=>ev.stopImmediatePropagation();
   if(fb.user&&fb.fam&&!isPremium()){
     if((a==='new-pet'||(a==='fab'&&state.view.name!=='pet'))&&petLimit()){stop();closeSheet();premiumSheet('prem_pets');return}
-    if(a==='ics'||a==='ics-all'){stop();premiumSheet('prem_cal');return}
+    
   }
   switch(a){
     case'account':stop();accountSheet();break;
@@ -997,14 +1220,14 @@ Object.assign(S.en,{
   prem_rc:'Saving prescription photos is Premium.',prem_nt:'Phone notifications are Premium.'
 });
 // Lista Premium actualizada
-S.es.prem_list=['Mascotas sin límite (la versión gratis permite 1)','Foto de perfil de cada mascota','Todas las especies: conejo, ave y otras','Macho castrado y hembra castrada','Fecha de nacimiento con edad automática','Medicamentos y tratamientos','Recetas guardadas con foto','Notificaciones en el celular','Recordatorios en el calendario del teléfono','Invitar a tu familia (hasta 6 personas)'];
-S.en.prem_list=['Unlimited pets (the free version allows 1)','Profile photo for each pet','Every species: rabbit, bird and more','Neutered male and spayed female','Date of birth with automatic age','Medications and treatments','Prescription photos saved','Phone notifications','Reminders in your phone calendar','Invite your family (up to 6 people)'];
+S.es.prem_list=['Mascotas sin límite (la versión gratis permite 1)','Foto de perfil de cada mascota','Más especies, además de perro, gato y conejo','Exportar el historial en PDF o imprimirlo','Notificaciones en el celular','Invitar a tu familia (hasta 6 personas)'];
+S.en.prem_list=['Unlimited pets (the free version allows 1)','Profile photo for each pet','More species besides dog, cat and rabbit','Export the history as PDF or print it','Phone notifications','Invite your family (up to 6 people)'];
 // Ayuda: recetas y notificaciones
 {const i=S.es.help.findIndex(h=>h[1]==='Agenda y recordatorios');
- S.es.help.splice(i,0,['scan','Recetas','Siempre a mano',['En la ficha de la mascota, en la sección <b>Recetas</b>, tocá <b>+ Agregar</b> (o el botón <span class="kbd">+</span> → <b>Foto de una receta</b>).','Tomale foto a la receta o elegila de la galería.','Escribí el motivo, la fecha y el veterinario, y tocá <b>Guardar</b>.','Para verla en grande, tocá la receta. Manteniendo el dedo sobre la imagen la podés guardar o compartir.'],'Guardar recetas es parte de Premium.']);
+ S.es.help.splice(i,0,['scan','Recetas','Siempre a mano',['En la ficha de la mascota, tocá el botón <span class="kbd">+</span> y elegí <b>Receta</b>.','Escribí el motivo, la fecha, el veterinario y las indicaciones.','Tocá <b>Guardar</b> y queda en el historial.'],'']);
  S.es.help.splice(i+2,0,['cal','Notificaciones en el celular','Que te avise solo',['En iPhone, primero instalá PETFILE en la pantalla de inicio y abrila desde el ícono. En Android funciona desde Chrome.','Entrá a <b>Agenda</b> o a <b>Mi cuenta</b> y tocá <b>Activar notificaciones</b>. Aceptá el permiso que pide el teléfono.','Cada mañana te llega lo que toca hoy y mañana, y una hora antes de cada cita.','Se activan en cada teléfono por separado: cada persona de la familia las activa en el suyo.'],'Las notificaciones son parte de Premium.']);}
 {const i=S.en.help.findIndex(h=>h[1]==='Schedule and reminders');
- S.en.help.splice(i,0,['scan','Prescriptions','Always at hand',["In the pet's file, under <b>Prescriptions</b>, tap <b>+ Add</b> (or the <span class=\"kbd\">+</span> button → <b>Prescription photo</b>).",'Take a photo of the prescription or pick it from your gallery.','Enter the reason, date and vet, then tap <b>Save</b>.','Tap a prescription to see it full size. Touch and hold the image to save or share it.'],'Saving prescriptions is part of Premium.']);
+ S.en.help.splice(i,0,['scan','Prescriptions','Always at hand',["In the pet's file, tap the <span class=\"kbd\">+</span> button and choose <b>Prescription</b>.",'Enter the reason, date, vet and instructions.','Tap <b>Save</b> and it stays in the history.'],'']);
  S.en.help.splice(i+2,0,['cal','Phone notifications','Reminders that come to you',['On iPhone, first add PETFILE to your Home Screen and open it from the icon. On Android it works from Chrome.','Go to <b>Schedule</b> or <b>My account</b> and tap <b>Turn on notifications</b>. Accept the permission your phone asks for.',"Every morning you get what's due today and tomorrow, and a reminder an hour before each appointment.",'They are turned on per phone: each family member turns them on on their own phone.'],'Notifications are part of Premium.']);}
 
 /* recetas: datos */
@@ -1149,7 +1372,7 @@ function deleteSheet(){
   <p class="tip" style="margin:0">${t('dl_sub')}</p>
   <label class="f full">${t('dl_type')}<input id="dl-word" autocomplete="off" autocapitalize="characters"></label>
   <div id="dl-err" class="err" role="alert" hidden></div>
-  <button class="btn block" id="dl-go" data-act="del-acct-go" disabled style="background:var(--warn);color:#fff">${t('dl_go')}</button>
+  <button class="btn block" id="dl-go" data-act="del-acct-go" disabled style="background:var(--warn);color:var(--warn-ink)">${t('dl_go')}</button>
   <button class="btn ghost block" data-act="close">${t('dl_cancel')}</button>`);
   const i=$('#dl-word');i.addEventListener('input',()=>{$('#dl-go').disabled=i.value.trim().toUpperCase()!==t('dl_word')});
 }
@@ -1188,7 +1411,7 @@ function reminders(pets){
 const chip=n=>`<span class="chip ${n<0?'late':n<=3?'soon':''}">${n<0?t('overdue'):rel(n)}</span>`;
 function remRow(r,showPet){
   return `<div class="rem">${avatar(r.pet)}<div style="min-width:0"><div class="t">${esc(r.label)}</div><div class="s">${showPet?esc(r.pet.name)+' · ':''}${fmtDate(r.when)}${r.n<0?' · '+rel(r.n):''}</div></div>
-  <div class="side">${chip(r.n)}<div class="mini"><button data-act="done" data-pet="${r.pet.id}" data-e="${r.entry.id}">${t('done')}</button>${state.caps.downloads?`<button data-act="ics" data-pet="${r.pet.id}" data-e="${r.entry.id}">${t('calendar')}${isPremium()?'':PBADGE()}</button>`:''}</div></div></div>`;
+  <div class="side">${chip(r.n)}<div class="mini"><button data-act="done" data-pet="${r.pet.id}" data-e="${r.entry.id}">${t('done')}</button></div></div></div>`;
 }
 
 /* vistas */
@@ -1237,7 +1460,7 @@ function homeView(){
 function petCard(p){
   const r=reminders([p]);const late=r.filter(x=>x.n<0).length,soon=r.filter(x=>x.n>=0&&x.n<=7).length;
   const badge=late?`<span class="badge">${t('b_late',late)}</span>`:soon?`<span class="badge">${t('b_week',soon)}</span>`:'';
-  return `<button class="pcard" data-act="open" data-pet="${p.id}">${p.photo?`<img src="${p.photo}" alt="">`:`<span class="ini">${initial(p)}</span>`}${badge}<span class="cap"><span class="n">${esc(p.name)}</span><span class="m">${esc([p.breed||spL(p.species),ageOf(p.birth)].filter(x=>x&&x!=='—').join(' · '))}</span></span></button>`;
+  return `<button class="pcard" data-act="open" data-pet="${p.id}">${p.photo?`<img src="${p.photo}" alt="">`:`<span class="ini">${initial(p)}</span>`}${badge}<span class="cap"><span class="n">${esc(p.name)}</span><span class="m">${esc([p.breed||spOf(p),ageOf(p.birth)].filter(x=>x&&x!=='—').join(' · '))}</span></span></button>`;
 }
 function petsView(){
   const pets=petsSorted();
@@ -1254,44 +1477,77 @@ function agendaView(){
   const rem=reminders(petsSorted());
   let s=`<section class="hello"><h1>${t('nav_agenda')}</h1><p>${t('ag_d')}</p></section>`+(typeof notifCard==='function'?notifCard(true):'');
   if(!rem.length)return s+`<div class="empty"><p>${t('ag_empty')}</p></div>`;
-  if(state.caps.downloads&&rem.some(r=>r.n>=0))s+=`<button class="btn ghost block" data-act="ics-all">${I.cal.replace('<svg','<svg width="20" height="20"')}${t('ag_ics')}${isPremium()?'':PBADGE()}</button>`;
   [[t('g_late'),r=>r.n<0],[t('g_week'),r=>r.n>=0&&r.n<=7],[t('g_month'),r=>r.n>7&&r.n<=31],[t('g_later'),r=>r.n>31]].forEach(([ti,f])=>{const g=rem.filter(f);if(g.length)s+=`<section class="sec"><div class="group-t">${ti}</div><div class="list">${g.map(r=>remRow(r,true)).join('')}</div></section>`});
   return s;
 }
+const legacyRc=p=>recetasOf(p.id).map(r=>({id:'rc_'+r.id,type:'receta',title:r.title||t('rc_def'),date:r.date,vet:r.vet,notes:r.notes,rc:r}));
 function petView(p){
-  const entries=(p.entries||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const entries=(p.entries||[]).concat(legacyRc(p)).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const counts={};entries.forEach(e=>counts[e.type]=(counts[e.type]||0)+1);
   const list=state.filter==='todo'?entries:entries.filter(e=>e.type===state.filter);
   const rem=reminders([p]);
   let s=`<section class="hero">${p.photo?`<img src="${p.photo}" alt="${esc(t('photoOf',p.name))}">`:`<span class="ini">${initial(p)}</span>`}
   <button class="round l" data-act="home" aria-label="${t('back')}">${I.back}</button><button class="round r" data-act="edit-pet" data-pet="${p.id}" aria-label="${t('editData')}">${I.edit}</button>
-  <div class="cap"><h1>${esc(p.name)}</h1><div class="sub">${esc(spL(p.species))}</div></div></section>
+  <button class="camera" ${isPremium()?`data-act="edit-pet" data-pet="${p.id}"`:`data-act="premium" data-why="prem_photo"`} aria-label="${p.photo?t('pf_chPh'):t('pf_addPh')}">${I.camera}</button><div class="cap"><h1>${esc(p.name)}</h1><div class="sub">${esc(spOf(p))}</div></div></section>
   <div class="facts"><div class="fact"><span class="label">${t('f_age')}</span><span class="v">${ageOf(p.birth)}</span></div><div class="fact"><span class="label">${t('f_weight')}</span><span class="v">${p.weight?esc(p.weight)+' kg':'—'}</span></div><div class="fact"><span class="label">${t('f_breed')}</span><span class="v">${esc(p.breed||'—')}</span></div><div class="fact"><span class="label">${t('f_sex')}</span><span class="v">${esc(sxL(p.sex)||'—')}</span></div></div>`;
   if(rem.length)s+=`<section class="sec"><div class="sec-h"><h2>${t('pending')}</h2></div><div class="list">${rem.map(r=>remRow(r,false)).join('')}</div></section>`;
-  s+=typeof recetasSection==='function'?recetasSection(p):'';
   if(state.caps.sample&&state.caps.img)s+=`<div class="reader"><div><b>${t('rx_t')}</b><p>${t('rx_d')}</p></div><label class="btn sm" for="rxfile">${I.scan.replace('<svg','<svg width="18" height="18"')}${t('rx_btn')}</label><input id="rxfile" type="file" accept="image/*" hidden></div>`;
-  s+=`<section class="sec"><div class="sec-h"><h2>${t('history')}</h2><button class="lnk" data-act="fab">${t('add_plus')}</button></div>`;
+  s+=`<section class="sec"><div class="sec-h"><h2>${t('history')}</h2><div class="hist-acts">${entries.length?`<button class="lnk" data-act="export" data-pet="${p.id}">${t('exp_btn')}${isPremium()?'':PBADGE()}</button>`:''}<button class="lnk" data-act="fab">${t('add_plus')}</button></div></div>`;
   if(entries.length)s+=`<div class="tabs" role="group">${[['todo',t('all'),entries.length]].concat(Object.keys(TYPE_META).filter(k=>counts[k]).map(k=>[k,TT(k).plural,counts[k]])).map(([k,l,c])=>`<button class="tab" data-act="filter" data-f="${k}" aria-pressed="${state.filter===k}">${l} ${c}</button>`).join('')}</div>`;
   s+=list.length?`<div class="timeline">${list.map(e=>entryCard(p,e)).join('')}</div>`:`<div class="empty"><p>${t('hist_empty')}</p></div>`;
   return s+`</section>`;
 }
 function entryCard(p,e){
+  if(e.rc)return `<article class="entry" style="--tc:var(--t-receta)"><span class="ticon">${I.scan}</span><div class="body"><div class="head"><span class="ty">${TT('receta').label}</span><span class="d">${fmtDate(e.date)}</span></div><div class="tt">${esc(e.title)}</div>${e.vet?`<div class="meta">${esc(e.vet)}</div>`:''}${e.notes?`<div class="notes">${esc(e.notes)}</div>`:''}<div class="thumbs"><button type="button" data-act="rc-view" data-id="${e.rc.id}" aria-label="${t('ph_view')}"><img src="${e.rc.thumb||''}" alt=""></button></div><div class="acts"><button class="t" data-act="rc-view" data-id="${e.rc.id}">${t('ph_view')}</button></div></div></article>`;
   const ty=TT(e.type);const bits=[];
   if(e.dose)bits.push(e.dose);if(e.freq)bits.push(e.freq);
   if(e.type==='med'&&e.end)bits.push(t('until')+' '+fmtDate(e.end));
   if(e.next)bits.push((ty.nextL||'')+': '+fmtDate(e.next)+(e.done?' ✓':''));
   if(e.vet)bits.push(e.vet);if(e.fromRx)bits.push(t('fromRx'));
   const conf=state.confirmEntry===e.id;
-  return `<article class="entry" style="--tc:var(${ty.color})"><span class="ticon">${I[ty.icon]}</span><div class="body"><div class="head"><span class="ty">${ty.label}</span><span class="d">${fmtDate(e.date)}</span></div><div class="tt">${esc(e.title)}</div>${bits.length?`<div class="meta">${esc(bits.join(' · '))}</div>`:''}${e.notes?`<div class="notes">${esc(e.notes)}</div>`:''}
+  return `<article class="entry" style="--tc:var(${ty.color})"><span class="ticon">${I[ty.icon]}</span><div class="body"><div class="head"><span class="ty">${ty.label}</span><span class="d">${fmtDate(e.date)}</span></div><div class="tt">${esc(e.title)}</div>${bits.length?`<div class="meta">${esc(bits.join(' · '))}</div>`:''}${e.notes?`<div class="notes">${esc(e.notes)}</div>`:''}${(e.photos||[]).length?`<div class="thumbs">${e.photos.map((x,i)=>`<button type="button" data-act="view-ph" data-pet="${p.id}" data-e="${e.id}" data-i="${i}" aria-label="${t('ph_view')}"><img src="${esc(x.url)}" alt="" loading="lazy">${i===0&&e.photos.length>1?`<span class="more">+${e.photos.length-1}</span>`:''}</button>`).join('')}</div>`:''}
   <div class="acts">${conf?`<span style="font-size:13px;font-weight:700">${t('del_q')}</span><button class="btn sm danger" data-act="del-entry" data-pet="${p.id}" data-e="${e.id}">${t('del')}</button><button class="btn sm ghost" data-act="cancel-del">${t('cancel')}</button>`:`<button class="t" data-act="edit-entry" data-pet="${p.id}" data-e="${e.id}">${t('edit')}</button><button class="t red" data-act="ask-del" data-e="${e.id}">${t('del')}</button>`}</div></div></article>`;
 }
 
 /* hojas */
+
+/* fotos de registros: Firebase Storage */
+async function uploadPhotos(p,list){const out=[];for(const x of list){if(!x.blob){out.push({url:x.url,path:x.path});continue}
+  const path=`families/${fb.famId}/pets/${p.id}/${uid('f')}.jpg`,ref=firebase.storage().ref(path);await ref.put(x.blob,{contentType:'image/jpeg',cacheControl:'private,max-age=31536000'});out.push({url:await ref.getDownloadURL(),path})}return out}
+function removePhotos(list){(list||[]).forEach(x=>{if(x&&x.path)firebase.storage().ref(x.path).delete().catch(e=>console.warn(e))})}
+/* exportar historial (Premium) */
+async function legacyFull(p){const m={};await Promise.all(recetasOf(p.id).map(async r=>{try{const d=await famRef(fb.famId).collection('recetasImg').doc(r.id).get();m[r.id]=d.exists?d.data().img:r.thumb}catch(e){m[r.id]=r.thumb}}));return m}
+function expRows(p,full){full=full||{};return (p.entries||[]).concat(legacyRc(p)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(e=>{const ty=TT(e.type),bits=[];if(e.dose)bits.push(e.dose);if(e.freq)bits.push(e.freq);if(e.type==='med'&&e.end)bits.push(t('until')+' '+fmtDate(e.end));if(e.next)bits.push((ty.nextL||'')+': '+fmtDate(e.next));if(e.vet)bits.push(e.vet);return{date:fmtDate(e.date),type:ty.label,color:ty.color,title:e.title||'',meta:bits.join('  |  '),notes:e.notes||'',photos:e.rc?[full[e.rc.id]||e.rc.thumb].filter(Boolean):(e.photos||[]).map(x=>x.url)}})}
+function expSub(p){return [spOf(p),p.breed,ageOf(p.birth)!=='—'?ageOf(p.birth):'',p.weight?p.weight+' kg':'',sxL(p.sex)].filter(Boolean).join(' · ')}
+function exportSheet(p){const b=(a,ic,c,x,d)=>`<button type="button" data-act="${a}" data-pet="${p.id}" style="--tc:var(${c})"><span class="ticon">${I[ic]}</span><span>${x}<small>${d}</small></span></button>`;
+  openSheet(`<div><div class="label">${esc(p.name)}</div><h2>${t('exp_t')}</h2></div><div class="types">${b('exp-print','printer','--t-cita',t('exp_print'),t('exp_printD'))}${b('exp-pdf','filedown','--t-vacuna',t('exp_pdf'),t('exp_pdfD'))}</div>`)}
+async function printHistory(p){let d=$('#printdoc');if(!d){d=document.createElement('div');d.id='printdoc';document.body.appendChild(d)}
+  const rows=expRows(p,await legacyFull(p));d.innerHTML=`<div class="pd-h">${p.photo?`<img src="${p.photo}" alt="">`:''}<div><small>${t('exp_doc')}</small><b>${esc(p.name)}</b><small>${esc(expSub(p))}</small></div></div>${rows.map(r=>`<div class="pd-r"><div class="d">${esc(r.date)}</div><div><div class="y" style="color:var(${r.color})">${esc(r.type)}</div><div class="tt">${esc(r.title)}</div>${r.meta?`<div class="m">${esc(r.meta)}</div>`:''}${r.notes?`<div>${esc(r.notes)}</div>`:''}${r.photos.length?`<div class="has">${t('ph_n',r.photos.length)}</div>`:''}</div></div>`).join('')}<p class="pd-f">${t('exp_by')} · ${t('exp_gen')} ${fmtDate(todayStr())}</p>${rows.flatMap(r=>r.photos.map(x=>`<div class="pd-att"><b>${esc(r.type)}: ${esc(r.title)}</b><div class="m">${esc(r.date)}</div><img src="${esc(x)}" alt=""></div>`)).join('')}`;
+  await Promise.all([...d.querySelectorAll('img')].map(i=>i.decode().catch(()=>{})));window.print()}
+function loadJsPdf(){return window.jspdf?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
+function circlePng(src){return new Promise(ok=>{if(!src)return ok(null);const i=new Image();i.onload=()=>{try{const c=document.createElement('canvas');c.width=c.height=320;const x=c.getContext('2d'),m=Math.min(i.naturalWidth||320,i.naturalHeight||320);x.beginPath();x.arc(160,160,160,0,7);x.clip();if(/^data:image\/svg/.test(src))x.drawImage(i,0,0,320,320);else x.drawImage(i,(i.naturalWidth-m)/2,(i.naturalHeight-m)/2,m,m,0,0,320,320);ok(c.toDataURL('image/png'))}catch(e){ok(null)}};i.onerror=()=>ok(null);i.src=src})}
+/* /fs es un proxy de Netlify hacia Firebase Storage (mismo dominio, sin bloqueo CORS). */
+async function photoJpeg(url){const r=await fetch(url.replace('https://firebasestorage.googleapis.com','/fs'));if(!r.ok)throw new Error('foto '+r.status);const u=URL.createObjectURL(await r.blob());try{return await new Promise((ok,no)=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=i.naturalWidth||900;c.height=i.naturalHeight||1200;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(i,0,0,c.width,c.height);ok({d:c.toDataURL('image/jpeg',.85),w:c.width,h:c.height})};i.onerror=no;i.src=u})}finally{URL.revokeObjectURL(u)}}
+async function downloadPdf(p){toast('PDF…');try{await loadJsPdf();const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'letter'}),W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),M=16;
+  const rgb=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16));const cs=getComputedStyle(document.documentElement);
+  doc.setFillColor(31,79,255);doc.rect(0,0,W,42,'F');const png=await circlePng(p.photo);let tx=M;if(png){doc.setFillColor(234,224,205);doc.circle(M+13,21,14,'F');doc.addImage(png,'PNG',M,8,26,26);tx=M+33}
+  doc.setTextColor(234,224,205);doc.setFont('helvetica','normal');doc.setFontSize(10);doc.text(t('exp_doc'),tx,14);doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(23);doc.text(p.name||'',tx,24);doc.setFont('helvetica','normal');doc.setFontSize(10);doc.text(doc.splitTextToSize(expSub(p),W-tx-M)[0]||'',tx,31);
+  let y=52;const X=M+30,CW=W-X-M;const line=(s,sz,st,c,yy)=>{doc.setFont('helvetica',st);doc.setFontSize(sz);doc.setTextColor(...c);doc.text(s,X,yy)};
+  const INK=[61,35,24],MUT=[107,85,70],rows=expRows(p,await legacyFull(p));
+  rows.forEach(r=>{doc.setFont('helvetica','normal');doc.setFontSize(9.5);const m=r.meta?doc.splitTextToSize(r.meta,CW):[],n=r.notes?doc.splitTextToSize(r.notes,CW):[];if(r.photos.length)n.push('['+t('ph_n',r.photos.length)+']');const h=12+m.length*4.4+n.length*4.4+5;if(y+h>H-18){doc.addPage();y=18}
+    doc.setFontSize(9.5);doc.setTextColor(...MUT);doc.text(r.date.split(' · ')[0],M,y+3);
+    line(r.type,9,'bold',rgb(cs.getPropertyValue(r.color).trim()),y+3);line(doc.splitTextToSize(r.title,CW)[0],12.5,'bold',INK,y+9);let yy=y+14;
+    m.forEach(l=>{line(l,9.5,'normal',MUT,yy);yy+=4.4});n.forEach(l=>{line(l,9.5,'normal',INK,yy);yy+=4.4});
+    y=yy+1;doc.setDrawColor(217,204,181);doc.setLineWidth(.25);doc.line(M,y,W-M,y);y+=5});
+  for(const r of rows)for(const x of r.photos){const a=await photoJpeg(x);doc.addPage();doc.setFont('helvetica','bold');doc.setFontSize(12.5);doc.setTextColor(...INK);doc.text(doc.splitTextToSize(r.type+': '+r.title,W-2*M)[0],M,18);doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(...MUT);doc.text(t('ph_att')+'  |  '+r.date,M,23.5);const mw=W-2*M,mh=H-28-18,k=Math.min(mw/a.w,mh/a.h);doc.addImage(a.d,'JPEG',M,28,a.w*k,a.h*k)}
+  const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...MUT);doc.text(t('exp_by')+'  |  '+t('exp_gen')+' '+fmtDate(todayStr()),M,H-9);doc.text(t('exp_page')+' '+i+'/'+pages,W-M,H-9,{align:'right'})}
+  const name='historial-'+(p.name||'mascota').toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-')+'.pdf';
+  await state.caps.downloads.save({filename:name,data:doc.output('blob')});toast(t('exp_ok'))}catch(e){console.warn(e);toast(t('exp_err'))}}
 function openSheet(html){$('#layer').innerHTML=`<div class="scrim" data-act="close-scrim"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`;document.body.style.overflow='hidden'}
 function closeSheet(){$('#layer').innerHTML='';document.body.style.overflow=''}
 function typePicker(p){
   const rx=state.caps.sample&&state.caps.img;
-  openSheet(`<div><div class="label">${esc(p.name)}</div><h2>${t('pick_t')}</h2></div><div class="types">${typeof recetaPickerBtn==='function'?recetaPickerBtn(p):''}${rx?`<button class="wide" data-act="pick-rx"><span class="ticon">${I.scan}</span><span>${t('pick_rx')}<small>${t('pick_rx_d')}</small></span></button>`:''}${Object.keys(TYPE_META).map(k=>{const ty=TT(k),lk=k==='med'&&!isPremium();return `<button data-act="${lk?'premium':'new-entry'}" data-type="${k}"${lk?' data-into="tp-prem" data-why="prem_med" class="lockedt"':''} style="--tc:var(${ty.color})"><span class="ticon">${I[ty.icon]}</span><span>${ty.label}${lk?PBADGE():''}<small>${ty.hint}</small></span></button>`}).join('')}<div id="tp-prem" hidden style="grid-column:1/-1"></div></div>`);
+  openSheet(`<div><div class="label">${esc(p.name)}</div><h2>${t('pick_t')}</h2></div><div class="types">${rx?`<button class="wide" data-act="pick-rx"><span class="ticon">${I.scan}</span><span>${t('pick_rx')}<small>${t('pick_rx_d')}</small></span></button>`:''}${Object.keys(TYPE_META).map(k=>{const ty=TT(k),lk=false;return `<button data-act="${lk?'premium':'new-entry'}" data-type="${k}"${lk?' data-into="tp-prem" data-why="prem_med" class="lockedt"':''} style="--tc:var(${ty.color})"><span class="ticon">${I[ty.icon]}</span><span>${ty.label}${lk?PBADGE():''}<small>${ty.hint}</small></span></button>`}).join('')}<div id="tp-prem" hidden style="grid-column:1/-1"></div></div>`);
 }
 let draftPhoto=null,draftSex='',draftSpecies='Perro';
 function petForm(p){
@@ -1299,20 +1555,21 @@ function petForm(p){
   const ph=()=>draftPhoto?`<img class="ph" src="${draftPhoto}" alt="">`:`<div class="ph"><span class="mark"></span></div>`;
   const lab=x=>`<span class="label" style="text-transform:none;letter-spacing:0;font-size:13px">${x}</span>`;
   openSheet(`<h2>${isNew?t('pf_new'):esc(t('pf_edit',p.name))}</h2><form id="petform" class="fields" novalidate>
-  <div class="full photo-pick"><div id="pp">${ph()}</div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">${isPremium()?`<label class="btn sm soft" for="petphoto">${draftPhoto?t('pf_chPh'):t('pf_addPh')}</label>`:`<button type="button" class="btn sm soft" data-act="premium" data-into="pf-prem">${t('pf_addPh')}${PBADGE()}</button>`}<input id="petphoto" type="file" accept="image/*" hidden><button type="button" class="lnk" data-act="rm-photo" id="rmph" ${draftPhoto?'':'hidden'} style="color:var(--muted);font-size:13px">${t('pf_rmPh')}</button></div></div>
+  <div class="full photo-pick"><div id="pp">${ph()}</div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">${isPremium()?`<label class="btn sm soft" for="petphoto">${draftPhoto?t('pf_chPh'):t('pf_addPh')}</label>`:`<button type="button" class="btn sm soft" data-act="premium" data-into="pf-prem">${draftPhoto?t('pf_chPh'):t('pf_addPh')}${PBADGE()}</button>`}<input id="petphoto" type="file" accept="image/*" hidden><button type="button" class="lnk" data-act="rm-photo" id="rmph" ${draftPhoto?'':'hidden'} style="color:var(--muted);font-size:13px">${t('pf_rmPh')}</button></div></div>
   <label class="f full">${t('pf_name')}<input id="pf-name" value="${esc(p.name||'')}" placeholder="${t('pf_namePh')}" autocomplete="off"></label>
-  <div class="f full">${lab(t('pf_species'))}<div class="seg" id="seg-sp">${SPECIES.map(s=>premOk('species',s)?`<button type="button" data-act="pick-sp" data-v="${s}" aria-pressed="${draftSpecies===s}">${spL(s)}</button>`:lockBtn(spL(s),'pf-prem')).join('')}</div></div>
-  <div class="f full">${lab(t('pf_sex'))}<div class="seg" id="seg-sex" style="grid-template-columns:1fr 1fr">${SEXES.map(s=>premOk('sex',s)?`<button type="button" data-act="pick-sex" data-v="${s}" aria-pressed="${draftSex===s}">${sxL(s)}</button>`:lockBtn(sxL(s),'pf-prem')).join('')}</div></div>
+  <div class="f full">${lab(t('pf_species'))}<div class="seg" id="seg-sp">${SPECIES.map(s=>premOk('species',s)||draftSpecies===s?`<button type="button" data-act="pick-sp" data-v="${s}" aria-pressed="${draftSpecies===s}">${spL(s)}</button>`:lockBtn(spL(s),'pf-prem')).join('')}</div></div>
+  <label class="f full" id="pf-other-w" ${draftSpecies==='Otro'?'':'hidden'}>${t('pf_other')}<input id="pf-other" maxlength="40" value="${esc(p.speciesOther||'')}" placeholder="${t('pf_otherPh')}" autocomplete="off"></label>
+  <div class="f full">${lab(t('pf_sex'))}<div class="seg" id="seg-sex" style="grid-template-columns:1fr 1fr">${SEXES.map(s=>`<button type="button" data-act="pick-sex" data-v="${s}" aria-pressed="${draftSex===s}">${sxL(s)}</button>`).join('')}</div></div>
   <label class="f">${t('f_breed')}<input id="pf-breed" value="${esc(p.breed||'')}" placeholder="${t('pf_breedPh')}"></label>
   <label class="f">${t('pf_weight')}<input id="pf-weight" inputmode="decimal" value="${esc(p.weight||'')}" placeholder="${t('pf_weightPh')}"></label>
-  ${isPremium()?`<label class="f full">${t('pf_birth')}<input id="pf-birth" type="date" max="${todayStr()}" value="${esc(p.birth||'')}"></label>`:`<div class="f full">${lab(t('pf_birth'))}<button type="button" class="lockfield" data-act="premium" data-into="pf-prem"><span>${p.birth?fmtDate(p.birth):'—'}</span>${PBADGE()}</button><input id="pf-birth" type="hidden" value="${esc(p.birth||'')}"></div>`}
+  <label class="f full">${t('pf_birth')}<input id="pf-birth" type="date" max="${todayStr()}" value="${esc(p.birth||'')}"></label>
   <div id="pf-prem" class="full" hidden></div>
   <div id="pf-err" class="full err" hidden>${t('pf_err')}</div>
   <button class="btn dark block full" type="submit">${isNew?t('pf_add'):t('pf_save')}</button>
   ${isNew?'':`<div class="full" id="delpet">${delPetBtn(p)}</div>`}</form>`);
   $('#petphoto').addEventListener('change',async ev=>{const f=ev.target.files[0];if(!f)return;try{draftPhoto=await resizeImage(f,560,true);$('#pp').innerHTML=ph();$('#rmph').hidden=false}catch(e){toast(t('t_imgErr'))}});
   $('#petform').addEventListener('submit',ev=>{ev.preventDefault();const name=$('#pf-name').value.trim();if(!name){$('#pf-err').hidden=false;$('#pf-name').focus();return}
-    const pet=Object.assign({},p,{id:p.id||uid('m'),name,species:draftSpecies,sex:draftSex,breed:$('#pf-breed').value.trim(),weight:$('#pf-weight').value.trim().replace(',','.'),birth:$('#pf-birth').value,photo:draftPhoto||null,entries:p.entries||[],createdAt:p.createdAt||Date.now()});
+    const pet=Object.assign({},p,{id:p.id||uid('m'),name,species:draftSpecies,speciesOther:draftSpecies==='Otro'?$('#pf-other').value.trim():'',sex:draftSex,breed:$('#pf-breed').value.trim(),weight:$('#pf-weight').value.trim().replace(',','.'),birth:$('#pf-birth').value,photo:draftPhoto||null,entries:p.entries||[],createdAt:p.createdAt||Date.now()});
     closeSheet();persist(pet);if(isNew)go('pet',pet.id);toast(isNew?t('t_petAdded'):t('t_saved'))});
 }
 const delPetBtn=p=>`<button type="button" class="btn ghost block" style="color:var(--warn)" data-act="ask-del-pet" data-pet="${p.id}">${t('pf_del')}</button>`;
@@ -1322,16 +1579,23 @@ function entryForm(p,type,e){
   if(F.includes('datetime'))fx+=`<label class="f full">${ty.dateL}<input id="ef-date" type="datetime-local" value="${v('date')}"></label>`;
   if(F.includes('dose'))fx+=`<label class="f">${t('ef_dose')}<input id="ef-dose" value="${v('dose')}" placeholder="${t('ef_dosePh')}"></label>`;
   if(F.includes('freq'))fx+=`<label class="f">${t('ef_freq')}<input id="ef-freq" value="${v('freq')}" placeholder="${t('ef_freqPh')}"></label>`;
-  if(F.includes('date'))fx+=`<label class="f">${ty.dateL}<input id="ef-date" type="date" value="${esc(e.date||todayStr())}"></label>`;
-  if(F.includes('next'))fx+=`<label class="f">${ty.nextL}<input id="ef-next" type="date" value="${v('next')}"></label>`;
-  if(F.includes('end'))fx+=`<label class="f">${t('ef_end')}<input id="ef-end" type="date" value="${v('end')}"></label>`;
+  if(F.includes('date'))fx+=`<label class="f full">${ty.dateL}<input id="ef-date" type="date" value="${esc(e.date||todayStr())}"></label>`;
+  if(F.includes('next'))fx+=`<label class="f full">${ty.nextL}<input id="ef-next" type="date" value="${v('next')}"></label>`;
+  if(F.includes('end'))fx+=`<label class="f full">${t('ef_end')}<input id="ef-end" type="date" value="${v('end')}"></label>`;
   if(F.includes('vet'))fx+=`<label class="f full">${t('ef_vet')}<input id="ef-vet" value="${v('vet')}" placeholder="${t('ef_vetPh')}"></label>`;
-  fx+=`<label class="f full">${t('ef_notes')}<textarea id="ef-notes" placeholder="${t('ef_notesPh')}">${v('notes')}</textarea></label>`;
+  let draftPh=(e.photos||[]).map(x=>Object.assign({},x));
+  fx+=`<label class="f full">${t('ef_obs')}<textarea id="ef-notes" placeholder="${t('ef_notesPh')}">${v('notes')}</textarea></label>`;
+  if(RECORD_PHOTOS)fx+=`<div class="f full"><span class="label" style="font-size:13px;color:var(--ink)">${t('ph_t')}</span><span class="ph-hint">${t('ph_d')}</span><div class="ph-grid" id="ef-ph"></div><input id="ef-file" type="file" accept="image/*" multiple hidden></div>`;
   openSheet(`<div style="display:flex;gap:12px;align-items:center;--tc:var(${ty.color})"><span class="ticon">${I[ty.icon]}</span><div><div class="label">${esc(p.name)}</div><h2>${isNew?ty.label:t('ef_edit',ty.label)}</h2></div></div><form id="entform" class="fields" novalidate>${fx}
   <div id="ef-err" class="full err" hidden>${t('ef_err',ty.titleL)}</div><button class="btn dark block full" type="submit">${t('save')}</button></form>`);
-  $('#entform').addEventListener('submit',ev=>{ev.preventDefault();const g=id=>{const el=$('#'+id);return el?el.value.trim():''};
+  if(RECORD_PHOTOS){const drawPh=()=>{$('#ef-ph').innerHTML=draftPh.map((x,i)=>`<div class="ph-t"><img src="${esc(x.url||x.preview)}" alt=""><button type="button" class="ph-x" data-i="${i}" aria-label="${t('ph_rm')}">×</button></div>`).join('')+(draftPh.length<6?`<label class="ph-add" for="ef-file">${I.camera}${t('ph_add')}</label>`:'')};drawPh();
+  $('#ef-ph').addEventListener('click',ev=>{const b=ev.target.closest('.ph-x');if(b){draftPh.splice(+b.dataset.i,1);drawPh()}});
+  $('#ef-file').addEventListener('change',async ev=>{const fs=[...ev.target.files];ev.target.value='';let room=6-draftPh.length;if(fs.length>room)toast(t('ph_max'));if(!isPremium()){const used=Object.values(state.pets).reduce((a,x)=>a+(x.entries||[]).reduce((b,y)=>b+(y.photos||[]).length,0),0)-(e.photos||[]).length+draftPh.length,left=Math.max(0,5-used);if(fs.length>left)toast(t('ph_free'));room=Math.min(room,left)}for(const f of fs.slice(0,room)){try{const blob=await resizeImage(f,1400,false,true);draftPh.push({blob,preview:URL.createObjectURL(blob)});drawPh()}catch(er){toast(t('t_imgErr'))}}});}
+  $('#entform').addEventListener('submit',async ev=>{ev.preventDefault();const g=id=>{const el=$('#'+id);return el?el.value.trim():''};
     const title=g('ef-title'),date=g('ef-date');if(!title||!date){$('#ef-err').hidden=false;return}
     const ne=Object.assign({},e,{id:e.id||uid('r'),type,title,date,next:g('ef-next'),end:g('ef-end'),dose:g('ef-dose'),freq:g('ef-freq'),vet:g('ef-vet'),notes:g('ef-notes')});
+    let finalPh;const go=$('#entform button[type=submit]');try{go.disabled=true;go.classList.add('ph-busy');if(draftPh.some(x=>x.blob))go.textContent=t('ph_up');finalPh=await uploadPhotos(p,draftPh)}catch(er){console.warn(er);go.disabled=false;go.classList.remove('ph-busy');go.textContent=t('save');toast(t('ph_err'));return}
+    const keep=new Set(finalPh.map(x=>x.path));removePhotos((e.photos||[]).filter(x=>!keep.has(x.path)));if(finalPh.length)ne.photos=finalPh;else delete ne.photos;
     if(e.next!==ne.next||e.date!==ne.date)ne.done=false;Object.keys(ne).forEach(k=>{if(ne[k]===''||ne[k]===undefined)delete ne[k]});
     closeSheet();persist(Object.assign({},p,{entries:(p.entries||[]).filter(x=>x.id!==ne.id).concat(ne)}));toast(isNew?t('t_entryAdded'):t('t_entryUpd'))});
 }
@@ -1376,20 +1640,6 @@ function saveRx(p){
   closeSheet();if(!add.length)return;state.filter='todo';persist(Object.assign({},p,{entries:(p.entries||[]).concat(add)}));toast(t('t_rxSaved',add.length));
 }
 
-/* calendario */
-function icsEsc(s){return String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n')}
-function icsEvent(p,e,when,label){
-  const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');const L=['BEGIN:VEVENT','UID:'+e.id+'-'+when.replace(/\D/g,'')+'@petfile','DTSTAMP:'+stamp];
-  if(when.includes('T')){const d=new Date(when);const f=x=>ymd(x).replace(/-/g,'')+'T'+String(x.getHours()).padStart(2,'0')+String(x.getMinutes()).padStart(2,'0')+'00';L.push('DTSTART:'+f(d),'DTEND:'+f(new Date(d.getTime()+36e5)))}
-  else L.push('DTSTART;VALUE=DATE:'+when.replace(/-/g,''),'DTEND;VALUE=DATE:'+addDays(when,1).replace(/-/g,''));
-  L.push('SUMMARY:'+icsEsc(p.name+' — '+label));const desc=[e.vet,e.notes].filter(Boolean).join('\n');if(desc)L.push('DESCRIPTION:'+icsEsc(desc));if(e.vet)L.push('LOCATION:'+icsEsc(e.vet));
-  L.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEsc(label),'TRIGGER:-P1D','END:VALARM','END:VEVENT');return L.join('\r\n');
-}
-async function downloadIcs(items,name){
-  const body=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//PETFILE//'+lang.toUpperCase(),'CALSCALE:GREGORIAN'].concat(items.map(r=>icsEvent(r.pet,r.entry,r.when,r.label))).concat(['END:VCALENDAR']).join('\r\n');
-  try{await state.caps.downloads.save({filename:name,data:new Blob([body],{type:'text/calendar'})});toast(t('t_ics'))}catch(e){if(!(e&&e.code==='declined'))toast(t('t_icsErr'))}
-}
-
 /* navegación */
 const VIEWS=['agenda','mascotas','ayuda','familia'];
 function go(name,id){state.view={name,id};state.filter='todo';state.confirmEntry=null;const h=name==='pet'?'mascota-'+id:VIEWS.includes(name)?name:'';try{history.replaceState(null,'',h?'#'+h:location.pathname+location.search)}catch(e){location.hash=h}render();window.scrollTo(0,0)}
@@ -1409,24 +1659,26 @@ document.addEventListener('click',ev=>{
     case'ayuda':go('ayuda');break;
     case'open':go('pet',el.dataset.pet);break;
     case'fab':if(state.view.name==='pet'&&p)typePicker(p);else petForm();break;
+    case'view-ph':{const ee=(p.entries||[]).find(x=>x.id===el.dataset.e);if(ee){$('#layer').innerHTML=`<div class="viewer" role="dialog" aria-modal="true"><div class="track">${ee.photos.map(x=>`<div class="slide"><img src="${esc(x.url)}" alt=""></div>`).join('')}</div><button class="btn vclose" data-act="close">${t('close')}</button></div>`;document.body.style.overflow='hidden';const sl=document.querySelectorAll('.viewer .slide')[+el.dataset.i];if(sl)sl.scrollIntoView({inline:'center',block:'nearest'})}break}
+    case'export':if(!isPremium()){premiumSheet('prem_export');break}exportSheet(p);break;
+    case'exp-print':closeSheet();if(isPremium())printHistory(p);break;
+    case'exp-pdf':closeSheet();if(isPremium())downloadPdf(p);break;
     case'new-pet':petForm();break;
     case'edit-pet':petForm(p);break;
-    case'pick-sp':draftSpecies=el.dataset.v;document.querySelectorAll('#seg-sp button').forEach(b=>b.setAttribute('aria-pressed',b===el));break;
+    case'pick-sp':draftSpecies=el.dataset.v;if($('#pf-other-w'))$('#pf-other-w').hidden=draftSpecies!=='Otro';document.querySelectorAll('#seg-sp button').forEach(b=>b.setAttribute('aria-pressed',b===el));break;
     case'pick-sex':draftSex=draftSex===el.dataset.v?'':el.dataset.v;document.querySelectorAll('#seg-sex button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===draftSex));break;
     case'rm-photo':draftPhoto=null;$('#pp').innerHTML='<div class="ph"><span class="mark"></span></div>';el.hidden=true;break;
     case'ask-del-pet':$('#delpet').innerHTML=`<div class="confirm"><b>${esc(t('pf_delQ',p.name))}</b><span style="font-size:14px">${t('pf_delNote')}</span><div style="display:flex;gap:8px"><button type="button" class="btn sm danger" data-act="del-pet" data-pet="${p.id}">${t('pf_delYes')}</button><button type="button" class="btn sm ghost" data-act="cancel-del-pet" data-pet="${p.id}">${t('cancel')}</button></div></div>`;break;
     case'cancel-del-pet':$('#delpet').innerHTML=delPetBtn(p);break;
-    case'del-pet':{const n=p.name;closeSheet();removePet(p.id);go('home');toast(t('t_petDel',n));break}
+    case'del-pet':{const n=p.name;closeSheet();(p.entries||[]).forEach(x=>removePhotos(x.photos));removePet(p.id);go('home');toast(t('t_petDel',n));break}
     case'new-entry':closeSheet();entryForm(p,el.dataset.type);break;
     case'pick-rx':closeSheet();{const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=()=>{if(inp.files[0])readRx(p,inp.files[0])};inp.click()}break;
     case'edit-entry':{const e=(p.entries||[]).find(x=>x.id===el.dataset.e);if(e)entryForm(p,e.type,e);break}
     case'ask-del':state.confirmEntry=el.dataset.e;render();break;
     case'cancel-del':state.confirmEntry=null;render();break;
-    case'del-entry':state.confirmEntry=null;persist(Object.assign({},p,{entries:(p.entries||[]).filter(x=>x.id!==el.dataset.e)}));toast(t('t_entryDel'));break;
+    case'del-entry':state.confirmEntry=null;removePhotos(((p.entries||[]).find(x=>x.id===el.dataset.e)||{}).photos);persist(Object.assign({},p,{entries:(p.entries||[]).filter(x=>x.id!==el.dataset.e)}));toast(t('t_entryDel'));break;
     case'filter':state.filter=el.dataset.f;state.confirmEntry=null;render();break;
     case'done':persist(Object.assign({},p,{entries:(p.entries||[]).map(x=>x.id===el.dataset.e?Object.assign({},x,{done:true}):x)}));toast(t('t_done'));break;
-    case'ics':{const r=reminders([p]).find(x=>x.entry.id===el.dataset.e);if(r)downloadIcs([r],(p.name+'-'+r.entry.title).replace(/[^\wáéíóúñ-]+/gi,'-').slice(0,50)+'.ics');break}
-    case'ics-all':{const r=reminders(petsSorted()).filter(x=>x.n>=0);if(r.length)downloadIcs(r,'petfile.ics');break}
     case'save-rx':saveRx(p);break;
   }
 });
