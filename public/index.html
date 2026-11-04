@@ -539,6 +539,10 @@ label.f[hidden]{display:none}
 
 <script>
 (function(){
+// App nativa (Capacitor). En la web siempre es false y nada de lo que depende de esto cambia.
+const NATIVE=(()=>{try{return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())}catch(e){return false}})();
+const nativePlugin=name=>{try{return (window.Capacitor.Plugins||{})[name]||null}catch(e){return null}};
+const PUBLIC_APP_URL='https://petfilearca.netlify.app/';
 const I={
   syringe:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 2 4 4M17 7l3-3M19 9l-8.5 8.5a2.1 2.1 0 0 1-3 0l-2-2a2.1 2.1 0 0 1 0-3L14 4M9 11l4 4M5 19l-3 3M14 4l6 6"/></svg>',
   shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>',
@@ -718,7 +722,7 @@ Object.assign(S.es,{
   ac_t:'Mi cuenta',ac_plan:'Plan de la familia',ac_id:'ID de licencia',ac_idHint:'Envialo junto con tu compra o si necesitás soporte.',ac_copy:'Copiar',ac_copied:'Copiado',ac_logout:'Cerrar sesión',made:'Creado por',loading:'Cargando…',
   t_cloudErr:'No se pudo guardar. Revisá tu conexión.',cfg:'Falta la configuración de Firebase en el archivo (FIREBASE_CONFIG).',
   fam_t:'Mi familia',fam_lockT:'Compartí PETFILE con tu familia',fam_lockD:'Familia es una función Premium. Con la licencia, tu familia usa PETFILE con un solo pago.',fam_lockList:['Hasta 6 personas, cada una con su propia cuenta','Todos ven y editan las mismas mascotas, citas y recetas','Los recordatorios le llegan a cada persona','Solo vos pagás la licencia'],fam_paused:'Las demás personas de tu familia no pueden ver las mascotas hasta que actives Premium.',fam_haveCode:'Me invitaron: tengo un código',fam_cardLocked:'Compartí las mascotas con tu familia.',prem_fam:'Familia es una función Premium.',fam_memberLockT:'Tu familia ya no tiene Premium',fam_d:'Compartí las mascotas y su registro. Cada persona entra con su propia cuenta y solo el administrador paga la licencia.',fam_cardSolo:'Invitá a tu familia para ver y editar juntos el registro de las mascotas.',fam_cardMany:n=>`${n} personas comparten estas mascotas`,
-  fam_admin:'Administrador',fam_you:'vos',fam_count:n=>`${n} de ${MAX_FAMILY} personas`,fam_invite:'Invitar a alguien',fam_inviteD:'Compartí este código o el enlace. La otra persona crea su cuenta y se une con él.',fam_code:'Código de invitación',fam_share:'Compartir invitación',fam_copyLink:'Copiar enlace',fam_newCode:'Cambiar código',fam_newCodeOk:'Código cambiado. El anterior ya no sirve.',
+  fam_admin:'Administrador',fam_you:'vos',fam_count:n=>`${n} de ${MAX_FAMILY} personas`,fam_invite:'Invitar a alguien',fam_inviteD:'Compartí este código o el enlace. La otra persona crea su cuenta y se une con él.',fam_code:'Código de invitación',fam_share:'Compartir invitación',fam_copyLink:'Copiar enlace',fam_copyCode:'Copiar código',fam_copiedCode:'Código copiado',fam_newCode:'Cambiar código',fam_newCodeOk:'Código cambiado. El anterior ya no sirve.',
   fam_join:'Unirme a otra familia',fam_joinT:'Unirme a una familia',fam_joinD:'Escribí el código que te compartieron.',fam_codePh:'Ej. K7M2QX',fam_find:'Buscar',fam_of:n=>`Familia de ${n}`,fam_move:n=>n===1?'Tu mascota se va a pasar a esta familia.':`Tus ${n} mascotas se van a pasar a esta familia.`,fam_noPets:'Vas a ver las mascotas de esa familia y podrás agregar y editar registros.',fam_joinBtn:'Unirme',fam_joined:n=>`Ya sos parte de la familia de ${n}`,
   fam_leave:'Salir de la familia',fam_leaveQ:'Las mascotas se quedan con la familia y volvés a tu cuenta personal. ¿Salir?',fam_left:'Saliste de la familia',fam_remove:'Quitar',fam_removeQ:n=>`¿Quitar a ${n}? Va a dejar de ver las mascotas de la familia.`,fam_removedOk:n=>`${n} ya no está en la familia`,fam_removed:'Ya no sos parte de esa familia. Volviste a tu cuenta personal.',
   fam_e_code:'No encontramos ese código. Revisalo e intentá de nuevo.',fam_e_full:'No se pudo unir: esa familia ya tiene 6 personas o no tiene Premium activo. Pedile a quien te invitó que lo revise.',fam_e_owner:'Primero quitá a las otras personas de tu familia para poder unirte a otra.',fam_e_same:'Ya sos parte de esa familia.',
@@ -736,7 +740,7 @@ Object.assign(S.en,{
   ac_t:'My account',ac_plan:'Family plan',ac_id:'License ID',ac_idHint:'Send it with your purchase or if you need support.',ac_copy:'Copy',ac_copied:'Copied',ac_logout:'Sign out',made:'Made by',loading:'Loading…',
   t_cloudErr:"Couldn't save. Check your connection.",cfg:'Firebase settings are missing in the file (FIREBASE_CONFIG).',
   fam_t:'My family',fam_lockT:'Share PETFILE with your family',fam_lockD:'Family is a Premium feature. With the license, your whole family uses PETFILE for one payment.',fam_lockList:['Up to 6 people, each with their own account','Everyone sees and edits the same pets, appointments and prescriptions','Each person gets the reminders','Only you pay for the license'],fam_paused:"The other people in your family can't see the pets until you activate Premium.",fam_haveCode:'I was invited: I have a code',fam_cardLocked:'Share the pets with your family.',prem_fam:'Family is a Premium feature.',fam_memberLockT:'Your family no longer has Premium',fam_d:'Share the pets and their records. Everyone signs in with their own account and only the admin pays for the license.',fam_cardSolo:'Invite your family to view and edit the pet records together.',fam_cardMany:n=>`${n} people share these pets`,
-  fam_admin:'Admin',fam_you:'you',fam_count:n=>`${n} of ${MAX_FAMILY} people`,fam_invite:'Invite someone',fam_inviteD:'Share this code or the link. The other person creates an account and joins with it.',fam_code:'Invite code',fam_share:'Share invite',fam_copyLink:'Copy link',fam_newCode:'Change code',fam_newCodeOk:"Code changed. The old one doesn't work anymore.",
+  fam_admin:'Admin',fam_you:'you',fam_count:n=>`${n} of ${MAX_FAMILY} people`,fam_invite:'Invite someone',fam_inviteD:'Share this code or the link. The other person creates an account and joins with it.',fam_code:'Invite code',fam_share:'Share invite',fam_copyLink:'Copy link',fam_copyCode:'Copy code',fam_copiedCode:'Code copied',fam_newCode:'Change code',fam_newCodeOk:"Code changed. The old one doesn't work anymore.",
   fam_join:'Join another family',fam_joinT:'Join a family',fam_joinD:'Enter the code you were sent.',fam_codePh:'e.g. K7M2QX',fam_find:'Find',fam_of:n=>`${n}'s family`,fam_move:n=>n===1?'Your pet will move to this family.':`Your ${n} pets will move to this family.`,fam_noPets:"You'll see that family's pets and can add and edit records.",fam_joinBtn:'Join',fam_joined:n=>`You're now part of ${n}'s family`,
   fam_leave:'Leave family',fam_leaveQ:'The pets stay with the family and you go back to your personal account. Leave?',fam_left:'You left the family',fam_remove:'Remove',fam_removeQ:n=>`Remove ${n}? They'll stop seeing the family's pets.`,fam_removedOk:n=>`${n} is no longer in the family`,fam_removed:"You're no longer part of that family. You're back on your personal account.",
   fam_e_code:"We couldn't find that code. Check it and try again.",fam_e_full:"Couldn't join: that family already has 6 people or doesn't have Premium active. Ask whoever invited you to check.",fam_e_owner:'First remove the other people from your family to join another one.',fam_e_same:"You're already part of that family.",
@@ -768,7 +772,7 @@ function newCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';const r=new Uint32
 function myName(){return (fb.acct&&fb.acct.name)||(fb.user&&fb.user.displayName)||fb.pendingName||((fb.user&&fb.user.email)||'').split('@')[0]||'?'}
 const isFamOwner=()=>!!(fb.fam&&fb.user&&fb.fam.owner===fb.user.uid);
 const ownerName=()=>{const f=fb.fam;if(!f)return'';const i=(f.memberInfo||{})[f.owner]||{};return i.name||i.email||'—'};
-const inviteLink=code=>location.origin+location.pathname+'?familia='+encodeURIComponent(code);
+const inviteLink=code=>(NATIVE?PUBLIC_APP_URL:location.origin+location.pathname)+'?familia='+encodeURIComponent(code);
 
 function license(){
   const f=fb.fam,now=Date.now();
@@ -785,7 +789,7 @@ function checkoutUrl(){try{const u=new URL(CHECKOUT_URL);if(fb.user){u.searchPar
 const canBuy=()=>hasCheckout()&&isFamOwner();
 const buyBtn=cls=>canBuy()?`<a class="btn ${cls||''}" href="${esc(checkoutUrl())}" target="_blank" rel="noopener">${t('lic_buy')}</a>`:'';
 function trialBanner(){
-  const L=license();if(L.pending||L.status==='paid')return'';
+  const L=license();if(L.pending||L.status==='paid'||(NATIVE&&L.status!=='trial'))return'';
   const buy=canBuy()?`<a class="lnk" href="${esc(checkoutUrl())}" target="_blank" rel="noopener">${t('lic_buy')}</a>`:`<button class="lnk" data-act="premium">${t('prem_see')}</button>`;
   return L.status==='trial'?`<div class="trial"><span><b>${t('lic_trial',L.days)}</b><br><span class="muted" style="font-size:13px">${t('lic_trialB')}</span></span>${buy}</div>`
     :`<div class="trial free"><span><b>${t('lic_freeB')}</b></span>${buy}</div>`;
@@ -915,7 +919,7 @@ function familyBody(){
     :prem?`<div class="invbox"><b>${t('fam_invite')}</b><span class="muted" style="font-size:13.5px">${t('fam_inviteD')}</span>
       <div class="codebig" id="famcode">${esc(f.code||'')}</div>
       <button class="btn dark block" data-act="fam-share">${t('fam_share')}</button>
-      <div style="display:flex;gap:16px;justify-content:center"><button class="lnk" data-act="fam-copylink">${t('fam_copyLink')}</button><button class="lnk" style="color:var(--muted)" data-act="fam-newcode">${t('fam_newCode')}</button></div></div>`
+      <div style="display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center"><button class="lnk" data-act="fam-copycode">${t('fam_copyCode')}</button><button class="lnk" data-act="fam-copylink">${t('fam_copyLink')}</button><button class="lnk" style="color:var(--muted)" data-act="fam-newcode">${t('fam_newCode')}</button></div></div>`
     :`<div class="invbox"><b>${t('fam_invite')}${PBADGE()}</b><span class="muted" style="font-size:13.5px">${t('fam_inviteLocked')}</span>
       <div class="codebig blur" aria-hidden="true">K7M2QX</div>
       <button class="btn dark block" data-act="premium" data-into="fam-prem">${t('prem_see')}</button><div id="fam-prem" hidden></div></div>`;
@@ -975,6 +979,8 @@ function joinSheet(prefill){
 function go_home(){state.view={name:'home'};try{history.replaceState(null,'',location.pathname)}catch(e){}render()}
 async function shareInvite(){
   const code=fb.fam.code,link=inviteLink(code),text=t('fam_inviteText',code,link);
+  const NS=NATIVE&&nativePlugin('Share');
+  if(NS){try{await NS.share({title:'PETFILE',text,dialogTitle:t('fam_share')});return}catch(e){if(/cancel/i.test((e&&e.message)||''))return;console.warn(e)}}
   if(navigator.share){try{await navigator.share({title:'PETFILE',text});return}catch(e){if(e&&e.name==='AbortError')return}}
   copyText(text,t('fam_copiedInv'));
 }
@@ -997,7 +1003,7 @@ function authView(){
     ${up&&typeof consentLine==='function'?consentLine():''}
     <button class="btn dark block full" type="submit" id="au-go">${up?t('au_up'):t('au_in')}</button>
     ${up?'':`<button type="button" class="lnk full" data-act="forgot" style="justify-self:center">${t('au_forgot')}</button>`}
-  </form><button type="button" class="lnk" data-act="install" style="align-self:center">${t('in_link')}</button>${arcaBadge()}</div>`;
+  </form>${NATIVE?'':`<button type="button" class="lnk" data-act="install" style="align-self:center">${t('in_link')}</button>`}${arcaBadge()}</div>`;
 }
 function authErr(e){const c=(e&&e.code)||'';return c.includes('invalid-email')?t('e_email'):c.includes('email-already')?t('e_inuse'):c.includes('weak-password')?t('e_weak'):(c.includes('invalid-credential')||c.includes('wrong-password')||c.includes('user-not-found')||c.includes('invalid-login'))?t('e_cred'):c.includes('too-many')?t('e_many'):c.includes('network')?t('e_net'):t('e_gen')}
 function bindAuth(){
@@ -1076,6 +1082,7 @@ document.addEventListener('click',ev=>{
     case'familia':stop();closeSheet();go('familia');break;
     case'premium':{stop();const box=el.dataset.into&&$('#'+el.dataset.into);if(box){box.innerHTML=premiumBox(el.dataset.why);box.hidden=false;box.scrollIntoView({block:'nearest',behavior:'smooth'})}else premiumSheet(el.dataset.why);break}
     case'fam-share':stop();shareInvite();break;
+    case'fam-copycode':stop();copyText(fb.fam.code,t('fam_copiedCode'));break;
     case'fam-copylink':stop();copyText(inviteLink(fb.fam.code),t('fam_copiedInv'));break;
     case'fam-newcode':stop();changeCode().then(()=>{toast(t('fam_newCodeOk'));setTimeout(familySheet,300)}).catch(e=>{console.warn(e);toast(t('e_gen'))});break;
     case'fam-join':stop();joinSheet('');break;
@@ -1114,17 +1121,18 @@ Object.assign(S.en,{
 
 const inst={prompt:null,os:(()=>{const u=navigator.userAgent;if(/iPhone|iPad|iPod/.test(u)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))return'ios';if(/SamsungBrowser/.test(u))return'samsung';return'android'})(),tab:null};
 const isStandalone=()=>{try{return window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}catch(e){return false}};
+if(NATIVE)[S.es,S.en].forEach(L=>L.help.forEach(h=>{h[3]=h[3].filter(x=>!/instal/i.test(x))}));
 const INSTKEY='petfile-install-dismissed';
 const installDismissed=()=>{try{return localStorage.getItem(INSTKEY)==='1'}catch(e){return false}};
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();inst.prompt=e;if($('#layer').innerHTML.includes('in-sheet'))installSheet()});
 window.addEventListener('appinstalled',()=>{inst.prompt=null;closeSheet();toast(t('in_installed'))});
-if('serviceWorker' in navigator&&location.protocol==='https:'){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
+if(!NATIVE&&'serviceWorker' in navigator&&location.protocol==='https:'){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
 const DL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 7v7M9 11l3 3 3-3M10 18h4"/></svg>';
 function installBanner(){
-  if(isStandalone()||installDismissed())return'';
+  if(NATIVE||isStandalone()||installDismissed())return'';
   return `<div class="install"><span class="ticon" style="--tc:var(--accent)">${DL}</span><div style="min-width:0"><b>${t('in_bannerT')}</b><span>${t('in_bannerD')}</span><div class="ia"><button class="btn sm dark" data-act="install">${t('in_see')}</button><button class="lnk" style="color:var(--muted)" data-act="install-dismiss">${t('in_later')}</button></div></div></div>`;
 }
-const installCard=()=>`<button class="helpcta" data-act="install" style="margin-top:4px"><span class="ticon" style="--tc:var(--accent)">${DL}</span><span><b>${t('in_t')}</b>${t('in_card')}</span></button>`;
+const installCard=()=>NATIVE?'':`<button class="helpcta" data-act="install" style="margin-top:4px"><span class="ticon" style="--tc:var(--accent)">${DL}</span><span><b>${t('in_t')}</b>${t('in_card')}</span></button>`;
 function installSheet(){
   const os=inst.tab||inst.os;const O=t('in_os');
   const steps=O[os][1];
