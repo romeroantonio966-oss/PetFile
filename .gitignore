@@ -2,3 +2,6 @@ node_modules/
 .netlify/
 *.json.key
 service-account*.json
+
+# App móvil: se genera con "npm run mobile:build"
+www/
