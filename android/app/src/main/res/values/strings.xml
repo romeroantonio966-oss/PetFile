@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PETFILE</string>
+    <string name="title_activity_main">PETFILE</string>
+    <string name="package_name">com.grupoarca.petfile</string>
+    <string name="custom_url_scheme">com.grupoarca.petfile</string>
+</resources>
