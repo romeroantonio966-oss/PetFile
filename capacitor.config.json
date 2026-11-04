@@ -1,5 +1,10 @@
 {
   "appId": "com.grupoarca.petfile",
   "appName": "PETFILE",
-  "webDir": "www"
+  "webDir": "www",
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_petfile"
+    }
+  }
 }

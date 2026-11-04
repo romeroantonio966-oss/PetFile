@@ -787,7 +787,7 @@ function license(){
 const hasCheckout=()=>!/PEGAR/.test(CHECKOUT_URL);
 function checkoutUrl(){try{const u=new URL(CHECKOUT_URL);if(fb.user){u.searchParams.set('checkout[email]',fb.user.email||'');u.searchParams.set('checkout[custom][user_id]',fb.user.uid);if(fb.famId)u.searchParams.set('checkout[custom][family_id]',fb.famId)}return u.toString()}catch(e){return CHECKOUT_URL}}
 const canBuy=()=>hasCheckout()&&isFamOwner();
-const buyBtn=cls=>NATIVE?(canBuy()?`<button type="button" class="btn ${cls||''}" disabled>${t('prem_soon')}</button>`:''):canBuy()?`<a class="btn ${cls||''}" href="${esc(checkoutUrl())}" target="_blank" rel="noopener">${t('lic_buy')}</a>`:'';
+const buyBtn=cls=>NATIVE?(canBuy()?`<button type="button" class="btn ${cls||''}" style="opacity:.55;cursor:default" disabled>${t('prem_soon')}</button>`:''):canBuy()?`<a class="btn ${cls||''}" href="${esc(checkoutUrl())}" target="_blank" rel="noopener">${t('lic_buy')}</a>`:'';
 function trialBanner(){
   const L=license();if(L.pending||L.status==='paid'||(NATIVE&&L.status!=='trial'))return'';
   const buy=NATIVE?`<button class="lnk" data-act="premium">${t('prem_see')}</button>`:canBuy()?`<a class="lnk" href="${esc(checkoutUrl())}" target="_blank" rel="noopener">${t('lic_buy')}</a>`:`<button class="lnk" data-act="premium">${t('prem_see')}</button>`;
@@ -1044,6 +1044,7 @@ function lockView(){
   <div style="display:flex;justify-content:center;gap:16px"><button class="lnk" data-act="account">${t('ac_t')}</button><button class="lnk" style="color:var(--muted)" data-act="logout">${t('ac_logout')}</button></div>${arcaBadge()}</div></div>`;
 }
 function render(){
+  ntQueue();
   document.documentElement.lang=lang;
   document.querySelectorAll('.lang button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===lang));
   const app=$('#app'),acct=$('#acct'),lock=$('#lock');
@@ -1071,7 +1072,7 @@ document.addEventListener('click',ev=>{
   }
   switch(a){
     case'account':stop();accountSheet();break;
-    case'logout':stop();closeSheet();auth&&auth.signOut();try{history.replaceState(null,'',location.pathname)}catch(e){}state.view={name:'home'};break;
+    case'logout':stop();closeSheet();ntClearNative();auth&&auth.signOut();try{history.replaceState(null,'',location.pathname)}catch(e){}state.view={name:'home'};break;
     case'auth-tab':stop();fb.authMode=el.dataset.v;render();break;
     case'forgot':stop();forgotSheet();break;
     case'toggle-pw':{stop();const i=$('#'+el.dataset.for);if(i){const s=i.type==='password';i.type=s?'text':'password';el.textContent=s?t('au_hide'):t('au_show')}break}
@@ -1302,6 +1303,7 @@ const isIOS=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platfor
 function b64u(s){const p='='.repeat((4-s.length%4)%4);const b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(b,c=>c.charCodeAt(0))}
 const subId=sub=>btoa(sub.endpoint).replace(/[^A-Za-z0-9]/g,'').slice(-60);
 async function ntCheck(){
+  if(NATIVE)return ntCheckNative();
   try{
     if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){nt.state=isIOS()&&!isStandalone()?'install':'unsup';return}
     if(Notification.permission==='denied'){nt.state='denied';return}
@@ -1323,6 +1325,7 @@ function notifCard(compact){
   return `<div class="ntcard"><span class="ticon" style="--tc:var(--accent)">${I.cal}</span><div style="min-width:0;display:flex;flex-direction:column;gap:4px"><b>${t('nt_t')}</b>${body}${act?`<div>${act}</div>`:''}</div></div>`;
 }
 async function ntOn(btn){
+  if(NATIVE)return ntOnNative(btn);
   if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner"></span>'}
   try{
     const perm=await Notification.requestPermission();
@@ -1336,10 +1339,103 @@ async function ntOn(btn){
   render();refreshSheet();
 }
 async function ntOff(){
+  if(NATIVE)return ntOffNative();
   try{const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();if(sub){await userRef().collection('push').doc(subId(sub)).delete().catch(()=>{});await sub.unsubscribe()}nt.state='off';toast(t('nt_offOk'))}catch(e){console.warn(e)}
   render();refreshSheet();
 }
 function refreshSheet(){const s=$('#layer .sheet');if(s&&s.querySelector('.ntcard'))accountSheet()}
+/* Notificaciones locales de la app nativa: mismos avisos que send-reminders (resumen a las 7:00 y una hora antes de cada cita) */
+const NT_PREF='petfile-local-nt';
+const NT_MAX=60,NT_DAYS=60,NT_HOUR=7;
+const NT_TXT={
+  es:{today:'Hoy',tomorrow:'Mañana',overdue:n=>`${n} vencido${n>1?'s':''}`,more:n=>`y ${n} más`,booster:'Refuerzo',deworm:'Desparasitar',ends:'Termina',appt:h=>`Cita a las ${h}`,title:'PETFILE · Tus mascotas'},
+  en:{today:'Today',tomorrow:'Tomorrow',overdue:n=>`${n} overdue`,more:n=>`and ${n} more`,booster:'Booster',deworm:'Deworming',ends:'Ends',appt:h=>`Appointment at ${h}`,title:'PETFILE · Your pets'}
+};
+if(NATIVE){
+  [S.es,S.en].forEach(L=>L.help.forEach(h=>{h[3]=h[3].filter(x=>!/instal/i.test(x))}));
+  S.es.nt_d='Te avisamos en este teléfono cada mañana lo que toca hoy y mañana, y una hora antes de cada cita. Si otra persona de la familia cambia algo, el aviso se actualiza cuando abrís la app.';
+  S.en.nt_d="We notify you on this phone every morning about what's due today and tomorrow, and an hour before each appointment. If someone else in your family changes something, the reminder updates when you open the app.";
+}
+const ntPref=()=>{try{return localStorage.getItem(NT_PREF)}catch(e){return null}};
+const ntSetPref=v=>{try{v?localStorage.setItem(NT_PREF,v):localStorage.removeItem(NT_PREF)}catch(e){}};
+function ntDay(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function ntPlan(pets,L,nowMs){
+  const rem=[];
+  for(const p of pets)for(const e of p.entries||[]){
+    if(e.done)continue;
+    if((e.type==='vacuna'||e.type==='desp')&&e.next)rem.push({when:e.next,text:`${e.type==='vacuna'?L.booster:L.deworm} · ${e.title} (${p.name})`});
+    else if(e.type==='cita'&&e.date)rem.push({when:e.date,text:`${e.title} (${p.name})`,cita:true});
+    else if(e.type==='med'&&e.end)rem.push({when:e.end,text:`${L.ends} · ${e.title} (${p.name})`});
+  }
+  const out=[],now=new Date(nowMs);
+  for(let i=0;i<=NT_DAYS;i++){
+    const at=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i,NT_HOUR,0,0);
+    if(at.getTime()<=nowMs)continue;
+    const day=ntDay(at),tomorrow=ntDay(new Date(at.getFullYear(),at.getMonth(),at.getDate()+1)),limit=ntDay(new Date(at.getFullYear(),at.getMonth(),at.getDate()-60));
+    const hoy=rem.filter(r=>r.when.slice(0,10)===day),man=rem.filter(r=>r.when.slice(0,10)===tomorrow);
+    if(!hoy.length&&!man.length)continue;
+    const venc=rem.filter(r=>{const w=r.when.slice(0,10);return w<day&&w>=limit}).length;
+    const lines=[...hoy.map(r=>`${L.today}: ${r.text}`),...man.map(r=>`${L.tomorrow}: ${r.text}`)];
+    let body=lines.slice(0,3).join('\n');
+    if(lines.length>3)body+=`\n${L.more(lines.length-3)}`;
+    if(venc)body+=`\n${L.overdue(venc)}`;
+    out.push({at:at.getTime(),title:L.title,body});
+  }
+  for(const r of rem){
+    const m=r.cita&&/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(r.when);if(!m)continue;
+    const at=new Date(+m[1],+m[2]-1,+m[3],+m[4]-1,+m[5]).getTime();
+    if(at>nowMs&&at<=nowMs+NT_DAYS*864e5)out.push({at,title:L.appt(r.when.slice(11,16)),body:r.text});
+  }
+  return out.sort((a,b)=>a.at-b.at).slice(0,NT_MAX);
+}
+async function ntCheckNative(){
+  const LN=nativePlugin('LocalNotifications');
+  if(!LN){nt.state='unsup';return}
+  try{
+    const p=await LN.checkPermissions();
+    nt.state=p.display==='denied'?'denied':(p.display==='granted'&&fb.user&&ntPref()===fb.user.uid?'on':'off');
+  }catch(e){console.warn(e);nt.state='unsup'}
+}
+async function ntApply(plan){
+  const LN=nativePlugin('LocalNotifications');if(!LN)return;
+  const pend=await LN.getPending();
+  if(pend.notifications.length)await LN.cancel({notifications:pend.notifications.map(n=>({id:n.id}))});
+  if(plan.length)await LN.schedule({notifications:plan.map((n,i)=>({id:i+1,title:n.title,body:n.body,largeBody:n.body,schedule:{at:new Date(n.at),allowWhileIdle:true}}))});
+}
+let ntTimer=null,ntSig=null;
+function ntQueue(){if(!NATIVE)return;clearTimeout(ntTimer);ntTimer=setTimeout(()=>{ntSync().catch(e=>console.warn(e))},1200)}
+async function ntSync(){
+  if(!fb.user||state.loading)return;
+  const prev=nt.state;await ntCheckNative();
+  if(nt.state!==prev){render();refreshSheet()}
+  if(license().pending)return;
+  const plan=nt.state==='on'&&isPremium()?ntPlan(Object.values(state.pets),NT_TXT[lang==='en'?'en':'es'],Date.now()):[];
+  const sig=JSON.stringify(plan);if(sig===ntSig)return;
+  await ntApply(plan);ntSig=sig;
+}
+async function ntOnNative(btn){
+  const LN=nativePlugin('LocalNotifications');
+  if(!LN||!fb.user){toast(t('nt_err'));return}
+  if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner"></span>'}
+  try{
+    const p=await LN.requestPermissions();
+    if(p.display!=='granted'){nt.state=p.display==='denied'?'denied':'off';render();refreshSheet();return}
+    ntSetPref(fb.user.uid);nt.state='on';ntSig=null;toast(t('nt_onOk'));
+    await ntSync();
+    await LN.schedule({notifications:[{id:1000,title:'PETFILE',body:t('nt_test'),schedule:{at:new Date(Date.now()+1500),allowWhileIdle:true}}]});
+  }catch(e){console.warn(e);toast(t('nt_err'))}
+  render();refreshSheet();
+}
+async function ntOffNative(){
+  try{ntSetPref(null);nt.state='off';ntSig=null;await ntApply([]);toast(t('nt_offOk'))}catch(e){console.warn(e)}
+  render();refreshSheet();
+}
+function ntClearNative(){if(!NATIVE)return;ntSig=null;ntApply([]).catch(e=>console.warn(e))}
+if(NATIVE){
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)ntQueue()});
+  const LN=nativePlugin('LocalNotifications');
+  if(LN)try{LN.addListener('localNotificationActionPerformed',()=>{if(fb.user)go('agenda')})}catch(e){console.warn(e)}
+}
 setTimeout(()=>{ntCheck().then(()=>render())},1500);
 
 document.addEventListener('click',ev=>{
@@ -1401,7 +1497,7 @@ async function deleteAccount(){
     const r=await fetch('/.netlify/functions/delete-account',{method:'POST',headers:{Authorization:'Bearer '+tok,'Content-Type':'application/json'},body:'{}'});
     const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw new Error(j.error||r.status);
     try{['petfile-fb-last','petfile-install-dismissed'].forEach(k=>localStorage.removeItem(k))}catch(e){}
-    closeSheet();try{await auth.signOut()}catch(e){}
+    ntClearNative();ntSetPref(null);closeSheet();try{await auth.signOut()}catch(e){}
     try{await firebase.firestore().clearPersistence()}catch(e){}
     state.view={name:'home'};toast(t('dl_done'));
   }catch(e){console.warn(e);err.textContent=t('dl_err');err.hidden=false;go.disabled=false;go.textContent=t('dl_go')}
