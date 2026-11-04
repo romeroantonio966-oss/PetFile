@@ -787,10 +787,10 @@ function license(){
 const hasCheckout=()=>!/PEGAR/.test(CHECKOUT_URL);
 function checkoutUrl(){try{const u=new URL(CHECKOUT_URL);if(fb.user){u.searchParams.set('checkout[email]',fb.user.email||'');u.searchParams.set('checkout[custom][user_id]',fb.user.uid);if(fb.famId)u.searchParams.set('checkout[custom][family_id]',fb.famId)}return u.toString()}catch(e){return CHECKOUT_URL}}
 const canBuy=()=>hasCheckout()&&isFamOwner();
-const buyBtn=cls=>canBuy()?`<a class="btn ${cls||''}" href="${esc(checkoutUrl())}" target="_blank" rel="noopener">${t('lic_buy')}</a>`:'';
+const buyBtn=cls=>NATIVE?(canBuy()?`<button type="button" class="btn ${cls||''}" disabled>${t('prem_soon')}</button>`:''):canBuy()?`<a class="btn ${cls||''}" href="${esc(checkoutUrl())}" target="_blank" rel="noopener">${t('lic_buy')}</a>`:'';
 function trialBanner(){
   const L=license();if(L.pending||L.status==='paid'||(NATIVE&&L.status!=='trial'))return'';
-  const buy=canBuy()?`<a class="lnk" href="${esc(checkoutUrl())}" target="_blank" rel="noopener">${t('lic_buy')}</a>`:`<button class="lnk" data-act="premium">${t('prem_see')}</button>`;
+  const buy=NATIVE?`<button class="lnk" data-act="premium">${t('prem_see')}</button>`:canBuy()?`<a class="lnk" href="${esc(checkoutUrl())}" target="_blank" rel="noopener">${t('lic_buy')}</a>`:`<button class="lnk" data-act="premium">${t('prem_see')}</button>`;
   return L.status==='trial'?`<div class="trial"><span><b>${t('lic_trial',L.days)}</b><br><span class="muted" style="font-size:13px">${t('lic_trialB')}</span></span>${buy}</div>`
     :`<div class="trial free"><span><b>${t('lic_freeB')}</b></span>${buy}</div>`;
 }
@@ -1233,6 +1233,11 @@ Object.assign(S.en,{
 // Lista Premium actualizada
 S.es.prem_list=['Mascotas sin límite (la versión gratis permite 1)','Foto de perfil de cada mascota','Más especies, además de perro, gato y conejo','Exportar el historial en PDF o imprimirlo','Notificaciones en el celular','Invitar a tu familia (hasta 6 personas)'];
 S.en.prem_list=['Unlimited pets (the free version allows 1)','Profile photo for each pet','More species besides dog, cat and rabbit','Export the history as PDF or print it','Phone notifications','Invite your family (up to 6 people)'];
+// App de pruebas: oferta prevista de Premium, sin compras desde la app. La web conserva sus textos.
+if(NATIVE){
+  Object.assign(S.es,{prem_d:'Disfrutá de PETFILE Premium por solo ₡1.500 mensuales para vos y toda tu familia. Desbloqueás:',prem_soon:'Disponible pronto',fam_lockD:'Familia es una función Premium. Disfrutá de PETFILE Premium por solo ₡1.500 mensuales para vos y toda tu familia.'});
+  Object.assign(S.en,{prem_d:'Enjoy PETFILE Premium for only ₡1,500 a month for you and your whole family. You unlock:',prem_soon:'Available soon',fam_lockD:'Family is a Premium feature. Enjoy PETFILE Premium for only ₡1,500 a month for you and your whole family.'});
+}
 // Ayuda: recetas y notificaciones
 {const i=S.es.help.findIndex(h=>h[1]==='Agenda y recordatorios');
  S.es.help.splice(i,0,['scan','Recetas','Siempre a mano',['En la ficha de la mascota, tocá el botón <span class="kbd">+</span> y elegí <b>Receta</b>.','Escribí el motivo, la fecha, el veterinario y las indicaciones.','Tocá <b>Guardar</b> y queda en el historial.'],'']);
