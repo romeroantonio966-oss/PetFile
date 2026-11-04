@@ -35,14 +35,24 @@ function familyPremium(f) {
   return paid > now || (start && now < start + TRIAL_DAYS * 864e5);
 }
 
+// Las suscripciones las escribe el cliente: solo se envía a los servicios de notificaciones de los navegadores.
+const PUSH_HOST_RE = /^(?:fcm\.googleapis\.com|web\.push\.apple\.com|updates\.push\.services\.mozilla\.com|[a-z0-9.-]+\.notify\.windows\.com)$/;
+function pushAllowed(endpoint) {
+  try { const u = new URL(endpoint); return u.protocol === 'https:' && !u.port && PUSH_HOST_RE.test(u.hostname); } catch { return false; }
+}
+function validTz(tz) {
+  try { new Intl.DateTimeFormat('en-CA', { timeZone: tz }); return true; } catch { return false; }
+}
+const text = (v) => typeof v === 'string';
+
 // Mismos recordatorios que muestra la app.
 function reminders(pets, L) {
   const out = [];
-  for (const p of pets) for (const e of p.entries || []) {
-    if (e.done) continue;
-    if ((e.type === 'vacuna' || e.type === 'desp') && e.next) out.push({ when: e.next, text: `${e.type === 'vacuna' ? L.booster : L.deworm} · ${e.title} (${p.name})` });
-    else if (e.type === 'cita' && e.date) out.push({ when: e.date, text: `${e.title} (${p.name})`, cita: true });
-    else if (e.type === 'med' && e.end) out.push({ when: e.end, text: `${L.ends} · ${e.title} (${p.name})` });
+  for (const p of pets) for (const e of Array.isArray(p.entries) ? p.entries : []) {
+    if (!e || e.done) continue;
+    if ((e.type === 'vacuna' || e.type === 'desp') && text(e.next)) out.push({ when: e.next, text: `${e.type === 'vacuna' ? L.booster : L.deworm} · ${e.title} (${p.name})` });
+    else if (e.type === 'cita' && text(e.date)) out.push({ when: e.date, text: `${e.title} (${p.name})`, cita: true });
+    else if (e.type === 'med' && text(e.end)) out.push({ when: e.end, text: `${L.ends} · ${e.title} (${p.name})` });
   }
   return out;
 }
@@ -57,10 +67,12 @@ const run = async () => {
   let sent = 0, removed = 0;
 
   for (const doc of subs.docs) {
+   // Un dato dañado de una cuenta no debe frenar los avisos de las demás.
+   try {
     const uid = doc.ref.parent.parent.id;
     const d = doc.data();
-    if (!d.sub || !d.sub.endpoint) continue;
-    const tz = d.tz || 'America/Costa_Rica';
+    if (!d.sub || !pushAllowed(d.sub.endpoint)) continue;
+    const tz = validTz(d.tz) ? d.tz : 'America/Costa_Rica';
     const L = TXT[d.lang === 'en' ? 'en' : 'es'];
     const now = localParts(tz);
     const in1h = localParts(tz, new Date(Date.now() + 60 * 60e3)).stamp;
@@ -107,6 +119,7 @@ const run = async () => {
         console.warn('push', e && e.statusCode);
       }
     }
+   } catch (e) { console.error('send-reminders: suscripción', e); }
   }
   return json(200, { ok: true, sent, removed, subscriptions: subs.size });
 };

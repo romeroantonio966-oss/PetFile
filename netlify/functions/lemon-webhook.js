@@ -1,7 +1,7 @@
 // Webhook de Lemon Squeezy: activa Premium solo, sin que el cliente pegue el código.
 // Eventos: license_key_created y license_key_updated.
 const crypto = require('node:crypto');
-const { firebase, paidUntilFrom, lemonActivate, storeOk, json } = require('../lib/common');
+const { firebase, paidUntilFrom, lemonActivate, storeOk, json, licenseRef, familyOfLicense } = require('../lib/common');
 
 const run = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'method' });
@@ -26,24 +26,22 @@ const run = async (event) => {
 
   // 2) ¿De qué familia es? Primero por el código ya guardado; si no, por el dato que manda la app al comprar.
   const custom = (payload.meta && payload.meta.custom_data) || {};
-  const found = await db.collection('families').where('licenseKey', '==', lk.key).limit(1).get();
-  const familyId = !found.empty ? found.docs[0].id : (custom.family_id || custom.user_id || null);
+  const known = await familyOfLicense(db, lk.key);
+  const familyId = known || custom.family_id || custom.user_id || null;
   if (!familyId) return json(200, { ignored: 'sin familia (compra fuera de la app: se activa con el código)' });
   const famRef = db.collection('families').doc(familyId);
   if (!(await famRef.get()).exists) return json(200, { ignored: 'familia no existe' });
 
-  const data = {
-    paidUntil: admin.firestore.Timestamp.fromDate(paidUntilFrom(lk)),
-    licenseKey: lk.key,
-    licenseEmail: lk.user_email || null,
-    licenseUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  };
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const data = { paidUntil: admin.firestore.Timestamp.fromDate(paidUntilFrom(lk)), licenseUpdatedAt: now };
+  const lic = { licenseKey: lk.key, licenseEmail: lk.user_email || null, licenseUpdatedAt: now };
 
   // 3) Compra nueva: usar la activación para que el código no sirva en otra cuenta.
-  if (name === 'license_key_created' && found.empty) {
-    try { const r = await lemonActivate(lk.key, familyId); if (r.instance && r.instance.id) data.licenseInstance = r.instance.id; }
+  if (name === 'license_key_created' && !known) {
+    try { const r = await lemonActivate(lk.key, familyId); if (r.instance && r.instance.id) lic.licenseInstance = r.instance.id; }
     catch (e) { console.warn('activación', e); }
   }
+  await licenseRef(db, familyId).set(lic, { merge: true });
   await famRef.set(data, { merge: true });
   return json(200, { ok: true, familyId });
 };

@@ -40,7 +40,9 @@ const run = async (event) => {
     if (others.length) {
       const next = others[0];
       const info = (own.get('memberInfo') || {})[next] || {};
-      await ownRef.update({ owner: next, members: FV.arrayRemove(uid), ['memberInfo.' + uid]: FV.delete() });
+      // La licencia sigue con la familia, pero sin el correo de quien se va.
+      await ownRef.update({ owner: next, members: FV.arrayRemove(uid), ['memberInfo.' + uid]: FV.delete(), licenseEmail: FV.delete() });
+      await db.collection('familyLicenses').doc(uid).set({ licenseEmail: null }, { merge: true });
       const code = own.get('code');
       if (code) await db.collection('invites').doc(code).set({ familyId: uid, ownerName: info.name || info.email || '' }, { merge: true }).catch(() => {});
     } else {
@@ -50,6 +52,7 @@ const run = async (event) => {
         if (inv.exists && inv.get('familyId') === uid) await inv.ref.delete();
       }
       await db.recursiveDelete(ownRef); // mascotas, recetas, fotos y la familia
+      await db.collection('familyLicenses').doc(uid).delete();
       // Fotos de los registros en Firebase Storage.
       try {
         await admin.storage().bucket(process.env.FIREBASE_STORAGE_BUCKET || 'petfile-15279.firebasestorage.app').deleteFiles({ prefix: `families/${uid}/` });

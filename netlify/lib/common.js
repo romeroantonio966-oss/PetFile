@@ -44,8 +44,18 @@ async function lemonActivate(key, familyId) {
   return r.json().catch(() => ({}));
 }
 
+// Los datos de la licencia viven en un documento que solo el servidor puede leer.
+// Las familias antiguas pueden tenerlos todavía en su documento: se siguen reconociendo.
+const licenseRef = (db, familyId) => db.collection('familyLicenses').doc(familyId);
+async function familyOfLicense(db, key) {
+  const now = await db.collection('familyLicenses').where('licenseKey', '==', key).limit(1).get();
+  if (!now.empty) return now.docs[0].id;
+  const old = await db.collection('families').where('licenseKey', '==', key).limit(1).get();
+  return old.empty ? null : old.docs[0].id;
+}
+
 const storeOk = (storeId) => !process.env.LEMON_STORE_ID || String(storeId) === String(process.env.LEMON_STORE_ID);
 
 const json = (statusCode, body) => ({ statusCode, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 
-module.exports = { firebase, paidUntilFrom, lemonActivate, storeOk, json };
+module.exports = { firebase, paidUntilFrom, lemonActivate, storeOk, json, licenseRef, familyOfLicense };

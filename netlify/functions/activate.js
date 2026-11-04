@@ -1,6 +1,6 @@
 // POST /.netlify/functions/activate  { key }  con  Authorization: Bearer <token de Firebase>
 // El cliente pega el código de licencia que le llegó por correo y su familia pasa a Premium.
-const { firebase, paidUntilFrom, lemonActivate, storeOk, json } = require('../lib/common');
+const { firebase, paidUntilFrom, lemonActivate, storeOk, json, licenseRef, familyOfLicense } = require('../lib/common');
 
 const run = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'method' });
@@ -31,8 +31,7 @@ const run = async (event) => {
 
   if (!res.activated) {
     // Límite de activaciones alcanzado: solo se acepta si el código ya es de esta familia.
-    const owner = await db.collection('families').where('licenseKey', '==', key).limit(1).get();
-    const mine = fam.get('licenseKey') === key || (!owner.empty && owner.docs[0].id === familyId);
+    const mine = (await familyOfLicense(db, key)) === familyId;
     if (!mine) {
       if (lk.status === 'expired' || lk.status === 'disabled') return json(410, { error: 'expired' });
       return json(409, { error: 'used' });
@@ -41,13 +40,11 @@ const run = async (event) => {
   if (lk.status === 'expired' || lk.status === 'disabled') return json(410, { error: 'expired' });
 
   // 4) Guardar la licencia en la familia
-  const data = {
-    paidUntil: admin.firestore.Timestamp.fromDate(paidUntilFrom(lk)),
-    licenseKey: key,
-    licenseEmail: (res.meta && res.meta.customer_email) || null,
-    licenseUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  };
-  if (res.instance && res.instance.id) data.licenseInstance = res.instance.id;
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const data = { paidUntil: admin.firestore.Timestamp.fromDate(paidUntilFrom(lk)), licenseUpdatedAt: now };
+  const lic = { licenseKey: key, licenseEmail: (res.meta && res.meta.customer_email) || null, licenseUpdatedAt: now };
+  if (res.instance && res.instance.id) lic.licenseInstance = res.instance.id;
+  await licenseRef(db, familyId).set(lic, { merge: true });
   await famRef.set(data, { merge: true });
   return json(200, { ok: true, paidUntil: data.paidUntil.toDate().toISOString() });
 };

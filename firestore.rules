@@ -22,13 +22,46 @@ service cloud.firestore {
       return signedIn() && me() in f.members && (f.owner == me() || premium(f));
     }
 
+    // Validaciones de tipo y tamaño. Las reglas no pueden recorrer listas: la app
+    // también valida y escapa cada registro al leerlo.
+    function str(v, max) { return v is string && v.size() <= max; }
+    function optStr(m, k, max) { return !(k in m) || m[k] == null || str(m[k], max); }
+    function idOk(v) { return v is string && v.matches('^[A-Za-z0-9_-]{1,128}$'); }
+    function imageOk(v, max) { return v is string && v.size() <= max && v.matches('^data:image/(jpeg|png|webp|gif);base64,.*$'); }
+    function codeOk(v) { return v is string && v.matches('^[A-HJ-NP-Z2-9]{6}$'); }
+    function infoOk(i) {
+      return i is map && i.keys().hasOnly(['name', 'email']) && optStr(i, 'name', 200) && optStr(i, 'email', 320);
+    }
+    // Solo cambia la ficha propia dentro de memberInfo.
+    function ownInfoOnly() {
+      return request.resource.data.get('memberInfo', {}).diff(resource.data.get('memberInfo', {})).affectedKeys().hasOnly([me()]);
+    }
+    function petOk(petId, d) {
+      return idOk(petId) && str(d.get('name', ''), 200) && d.get('name', '').size() > 0
+        && optStr(d, 'species', 80) && optStr(d, 'speciesOther', 80) && optStr(d, 'sex', 40) && optStr(d, 'breed', 200)
+        && optStr(d, 'birth', 40)
+        && (!('weight' in d) || d.weight == null || d.weight is number || str(d.weight, 40))
+        && (!('photo' in d) || d.photo == null || imageOk(d.photo, 900000))
+        && (!('entries' in d) || (d.entries is list && d.entries.size() <= 2000));
+    }
+    function pushOk(d) {
+      return d.keys().hasOnly(['sub', 'tz', 'lang', 'createdAt', 'updatedAt'])
+        && d.sub is map && d.sub.endpoint is string && d.sub.endpoint.size() <= 1000
+        && d.sub.endpoint.matches('^https://(fcm[.]googleapis[.]com|web[.]push[.]apple[.]com|updates[.]push[.]services[.]mozilla[.]com|[a-z0-9.-]+[.]notify[.]windows[.]com)/.*$')
+        && optStr(d, 'tz', 64) && optStr(d, 'lang', 5);
+    }
+
     match /users/{uid} {
       allow read: if signedIn() && me() == uid;
       allow create: if signedIn() && me() == uid
         && request.resource.data.keys().hasOnly(['email', 'name', 'lang', 'trialStart', 'familyId'])
-        && request.resource.data.trialStart == request.time;
+        && request.resource.data.trialStart == request.time
+        && optStr(request.resource.data, 'email', 320) && optStr(request.resource.data, 'name', 200)
+        && optStr(request.resource.data, 'lang', 5) && idOk(request.resource.data.familyId);
       allow update: if signedIn() && me() == uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'lang', 'familyId']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'lang', 'familyId'])
+        && optStr(request.resource.data, 'name', 200) && optStr(request.resource.data, 'lang', 5)
+        && idOk(request.resource.data.familyId);
       allow delete: if false;
 
       // Datos de la versión anterior: solo lectura, para pasarlos a la familia.
@@ -39,19 +72,26 @@ service cloud.firestore {
 
       // Teléfonos con notificaciones activadas (cada persona solo los suyos).
       match /push/{pushId} {
-        allow read, write: if signedIn() && me() == uid;
+        allow read, delete: if signedIn() && me() == uid;
+        allow create, update: if signedIn() && me() == uid && pushOk(request.resource.data);
       }
     }
 
     match /invites/{code} {
       allow get: if signedIn();
       allow list: if false;
-      allow create: if signedIn()
+      allow create: if signedIn() && codeOk(code)
         && request.resource.data.keys().hasOnly(['familyId', 'ownerName'])
+        && optStr(request.resource.data, 'ownerName', 200)
         && getAfter(/databases/$(database)/documents/families/$(request.resource.data.familyId)).data.owner == me()
         && getAfter(/databases/$(database)/documents/families/$(request.resource.data.familyId)).data.code == code;
       allow delete: if signedIn() && fam(resource.data.familyId).owner == me();
       allow update: if false;
+    }
+
+    // Datos de la licencia: solo los usan las funciones del servidor.
+    match /familyLicenses/{fid} {
+      allow read, write: if false;
     }
 
     match /families/{fid} {
@@ -63,6 +103,10 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['owner', 'members', 'memberInfo', 'code', 'name', 'trialStart'])
         && request.resource.data.owner == me()
         && request.resource.data.members == [me()]
+        && codeOk(request.resource.data.code)
+        && optStr(request.resource.data, 'name', 200)
+        && request.resource.data.memberInfo.keys().hasOnly([me()])
+        && infoOk(request.resource.data.memberInfo[me()])
         && (request.resource.data.trialStart == request.time
             || request.resource.data.trialStart == userData(me()).trialStart);
 
@@ -71,7 +115,9 @@ service cloud.firestore {
         (resource.data.owner == me()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'code', 'members', 'memberInfo'])
           && resource.data.members.hasAll(request.resource.data.members)
-          && me() in request.resource.data.members)
+          && me() in request.resource.data.members
+          && optStr(request.resource.data, 'name', 200)
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['code']) || codeOk(request.resource.data.code)))
         ||
         // Unirse con el código correcto (máximo 6 personas y solo si la familia tiene Premium).
         (!(me() in resource.data.members)
@@ -81,29 +127,33 @@ service cloud.firestore {
           && request.resource.data.members.hasAll(resource.data.members)
           && me() in request.resource.data.members
           && request.resource.data.members.size() == resource.data.members.size() + 1
-          && request.resource.data.members.size() <= 6)
+          && request.resource.data.members.size() <= 6
+          && ownInfoOnly()
+          && infoOk(request.resource.data.memberInfo[me()]))
         ||
         // Salir de la familia (cualquiera menos el administrador).
         (me() in resource.data.members && resource.data.owner != me()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberInfo'])
           && !(me() in request.resource.data.members)
           && request.resource.data.members.hasAll(resource.data.members.removeAll([me()]))
-          && request.resource.data.members.size() == resource.data.members.size() - 1)
+          && request.resource.data.members.size() == resource.data.members.size() - 1
+          && ownInfoOnly())
       );
       allow delete: if false;
 
       match /pets/{petId} {
-        allow read, create, update, delete: if canUse(fid);
+        allow read, delete: if canUse(fid);
+        allow create, update: if canUse(fid) && petOk(petId, request.resource.data);
       }
 
       // Recetas: datos y miniatura en "recetas"; la foto completa aparte, en "recetasImg".
       match /recetas/{rid} {
         allow read, delete: if canUse(fid);
-        allow create, update: if canUse(fid) && request.resource.data.thumb.size() < 120000;
+        allow create, update: if canUse(fid) && imageOk(request.resource.data.thumb, 120000);
       }
       match /recetasImg/{rid} {
         allow read, delete: if canUse(fid);
-        allow create, update: if canUse(fid) && request.resource.data.img.size() < 950000;
+        allow create, update: if canUse(fid) && imageOk(request.resource.data.img, 950000);
       }
     }
   }
