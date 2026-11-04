@@ -62,7 +62,8 @@ for (const f of FONTS) {
   }
 }
 writeFileSync(join(VENDOR, 'fonts.css'), fontCss);
-html = swap(html, '<link rel="preconnect" href="https://fonts.googleapis.com">\n', '');
+// Sin salto de línea en el patrón: en Windows, Git puede dejar index.html con CRLF.
+html = swap(html, '<link rel="preconnect" href="https://fonts.googleapis.com">', '');
 html = swap(html, 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600;700&display=swap', 'vendor/fonts.css');
 
 // Nada de la interfaz debe quedar cargándose desde internet.
