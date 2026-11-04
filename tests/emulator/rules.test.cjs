@@ -14,11 +14,40 @@ beforeEach(async () => { await env.clearFirestore(); await seed(async (d) => {
   await setDoc(doc(d, 'families/f'), { owner: 'o', members: ['o', 'm'], memberInfo: { o: { name: 'O', email: 'o@x' }, m: { name: 'M', email: 'm@x' } }, code: 'ABCDEF', paidUntil: FUT, name: 'F' });
   await setDoc(doc(d, 'families/f/pets/p'), { id: 'p', name: 'C', entries: [] });
   await setDoc(doc(d, 'familyLicenses/f'), { licenseKey: 'K' });
+  await setDoc(doc(d, 'families/libre'), { owner: 'l', members: ['l'], memberInfo: { l: { name: 'L' } }, code: 'ABCDEG', name: 'L', trialStart: PAST });
   await setDoc(doc(d, 'invites/ABCDEF'), { familyId: 'f', ownerName: 'O' });
 }); });
 const JOIN = (u, extra) => ({ members: arrayUnion(u), ['memberInfo.' + u]: { name: 'N', email: 'n@x' }, joinCode: 'ABCDEF', ...extra });
 test('Licencia: nadie lee familyLicenses', async () => { await assertFails(getDoc(doc(db('o'), 'familyLicenses/f'))); await assertFails(setDoc(doc(db('o'), 'familyLicenses/f'), { licenseKey: 'x' })); });
-test('Premium: ni el administrador se lo pone', async () => { await assertFails(updateDoc(doc(db('o'), 'families/f'), { paidUntil: FUT })); await assertFails(setDoc(doc(db('z'), 'families/z'), { owner: 'z', members: ['z'], memberInfo: { z: {} }, code: 'ABCDEG', paidUntil: FUT, trialStart: serverTimestamp() })); });
+// Premium es familiar y solo lo escribe el servidor: la fecha nueva siempre debe DIFERIR de la guardada,
+// porque Firestore no cuenta como cambio escribir el mismo valor.
+const LATER = Timestamp.fromMillis(Date.now() + 9000 * 864e5);
+const PAID = (u, id) => doc(db(u), 'families/' + id);
+for (const [n, u, id, data] of [
+  ['administrador con Premium alarga la fecha', 'o', 'f', { paidUntil: LATER }],
+  ['administrador con Premium la adelanta', 'o', 'f', { paidUntil: PAST }],
+  ['administrador borra la fecha', 'o', 'f', { paidUntil: deleteField() }],
+  ['administrador gratis se da Premium', 'l', 'libre', { paidUntil: LATER }],
+  ['administrador mezcla Premium con un cambio permitido', 'o', 'f', { name: 'Nuevo', paidUntil: LATER }],
+  ['administrador cambia licencia', 'o', 'f', { licenseKey: 'x' }],
+  ['administrador cambia la fecha de prueba', 'l', 'libre', { trialStart: LATER }],
+  ['administrador agrega un campo de suscripción', 'o', 'f', { subscription: { active: true, until: LATER } }],
+  ['administrador agrega derechos', 'o', 'f', { entitlements: { premium: true } }],
+  ['integrante alarga la fecha', 'm', 'f', { paidUntil: LATER }],
+  ['integrante se hace administrador', 'm', 'f', { owner: 'm' }],
+  ['ajeno da Premium', 'z', 'f', { paidUntil: LATER }],
+  ['al unirse con código', 'n', 'f', { members: arrayUnion('n'), 'memberInfo.n': { name: 'N' }, joinCode: 'ABCDEF', paidUntil: LATER }],
+  ['al unirse a una familia gratis', 'n', 'libre', { members: arrayUnion('n'), 'memberInfo.n': { name: 'N' }, joinCode: 'ABCDEG', paidUntil: LATER }],
+  ['al salir de la familia', 'm', 'f', { members: arrayRemove('m'), 'memberInfo.m': deleteField(), paidUntil: LATER }],
+]) test('Premium bloqueado: ' + n, async () => assertFails(updateDoc(PAID(u, id), data)));
+test('Premium bloqueado: reemplazar el documento completo', async () => { await assertFails(setDoc(PAID('l', 'libre'), { owner: 'l', members: ['l'], memberInfo: { l: { name: 'L' } }, code: 'ABCDEG', name: 'L', paidUntil: LATER })); await assertFails(setDoc(PAID('o', 'f'), { paidUntil: LATER }, { merge: true })); });
+test('Premium bloqueado: en lote con un cambio válido', async () => { const d = db('o'); const b = writeBatch(d); b.update(doc(d, 'families/f'), { name: 'Nuevo' }); b.update(doc(d, 'families/f'), { paidUntil: LATER }); await assertFails(b.commit()); });
+test('Premium bloqueado: al crear la familia', async () => { await assertFails(setDoc(doc(db('z'), 'families/z'), { owner: 'z', members: ['z'], memberInfo: { z: {} }, code: 'ABCDEG', paidUntil: LATER, trialStart: serverTimestamp() })); await assertFails(setDoc(doc(db('z'), 'families/z'), { owner: 'z', members: ['z'], memberInfo: { z: {} }, code: 'ABCDEG', subscription: true, trialStart: serverTimestamp() })); });
+test('Premium bloqueado: crear la familia de otra persona', async () => assertFails(setDoc(doc(db('z'), 'families/y'), { owner: 'z', members: ['z'], memberInfo: { z: {} }, code: 'ABCDEG', trialStart: serverTimestamp() })));
+test('Premium bloqueado: tras cada intento la fecha sigue igual', async () => { await updateDoc(PAID('o', 'f'), { paidUntil: LATER }).catch(() => {}); await seed(async (d) => { const f = (await getDoc(doc(d, 'families/f'))).data(); assert.ok(f.paidUntil.isEqual(FUT)); }); });
+test('Premium: reescribir el mismo valor no otorga nada', async () => { await assertSucceeds(updateDoc(PAID('o', 'f'), { paidUntil: FUT })); await seed(async (d) => { assert.ok((await getDoc(doc(d, 'families/f'))).data().paidUntil.isEqual(FUT)); }); await assertFails(getDoc(doc(db('z'), 'families/libre'))); });
+test('Premium familiar: un integrante usa los beneficios y al vencer pierde acceso', async () => { await assertSucceeds(getDoc(doc(db('m'), 'families/f/pets/p'))); await seed((d) => updateDoc(doc(d, 'families/f'), { paidUntil: PAST })); await assertFails(getDoc(doc(db('m'), 'families/f/pets/p'))); await assertSucceeds(getDoc(doc(db('o'), 'families/f/pets/p'))); });
+test('Premium familiar: hasta seis integrantes', async () => { await seed((d) => updateDoc(doc(d, 'families/f'), { members: ['o', 'm', 'a', 'b', 'c'] })); await assertSucceeds(updateDoc(doc(db('n'), 'families/f'), JOIN('n'))); await seed(async (d) => { assert.strictEqual((await getDoc(doc(d, 'families/f'))).data().members.length, 6); }); await assertFails(updateDoc(doc(db('q'), 'families/f'), JOIN('q'))); });
 test('Lectura: ajenos no ven familia ni mascotas', async () => { await assertFails(getDoc(doc(db('z'), 'families/f'))); await assertFails(getDoc(doc(db('z'), 'families/f/pets/p'))); await assertSucceeds(getDoc(doc(db('m'), 'families/f/pets/p'))); });
 test('Mascotas: datos legítimos pasan', async () => { await assertSucceeds(setDoc(doc(db('m'), 'families/f/pets/q1'), { id: 'q1', name: 'Tom', species: 'Perro', weight: '12.5', birth: '2020-01-01', photo: null, entries: [{ id: 'e', title: 'x', date: '2026-01-01' }], createdAt: 1 })); await assertSucceeds(setDoc(doc(db('m'), 'families/f/pets/q2'), { name: 'Tom', photo: 'data:image/jpeg;base64,AAAA' })); await assertSucceeds(deleteDoc(doc(db('m'), 'families/f/pets/p'))); });
 for (const [n, d, id] of [['foto activa', { name: 'x', photo: '"><img onerror=1>' }, 'a1'], ['foto svg', { name: 'x', photo: 'data:image/svg+xml;base64,AA' }, 'a2'], ['nombre no texto', { name: 5 }, 'a3'], ['sin nombre', { breed: 'x' }, 'a4'], ['entries no lista', { name: 'x', entries: 'no' }, 'a5'], ['id con comillas', { name: 'x' }, 'a"b']]) test('Mascotas: rechaza ' + n, async () => assertFails(setDoc(doc(db('m'), 'families/f/pets/' + id), d)));
