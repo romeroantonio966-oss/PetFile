@@ -3,6 +3,7 @@
 - `public/` — la app (lo que ve el cliente).
 - `netlify/functions/activate.js` — activa Premium con el código de licencia que llega por correo.
 - `netlify/functions/lemon-webhook.js` — activa Premium solo, apenas Lemon Squeezy confirma la compra.
+- `netlify/functions/fs-photo.js` — entrega al PDF las fotos del bucket de PETFILE, solo imágenes.
 - `firestore.rules` — reglas de seguridad para pegar en Firestore → Reglas.
 - `storage.rules` — reglas de seguridad para pegar en Storage → Reglas (fotos de los registros).
 
@@ -23,3 +24,10 @@ Están apagadas porque Firebase Storage todavía no está activo. Para encenderl
 1. Pasar el proyecto a Blaze, crear Storage en `US-CENTRAL1` y pegar `storage.rules`.
 2. En `public/index.html`, poner `RECORD_PHOTOS=true`.
 3. Volver a agregar a la lista Premium el tope de 5 fotos, y revisar el texto de ayuda de Recetas y `privacidad.html`.
+
+## Pruebas de seguridad
+
+- `npm test`: funciones, ataques XSS, flujos normales y política de seguridad, con Firebase simulado. Requiere `npx playwright install chromium` la primera vez.
+- `npm run test:rules`: reglas de Firestore y Storage contra el emulador local. Requiere Java y usa el proyecto `demo-petfile`, que no puede tocar producción.
+
+Los datos de licencia nuevos se guardan en `familyLicenses`, que solo lee el servidor. `scripts/migrate-license-fields.cjs` mueve los antiguos; solo cambia datos con `--apply`.
