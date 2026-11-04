@@ -15,9 +15,10 @@
 [functions."send-reminders"]
   schedule = "0 * * * *"
 
-# Proxy a Firebase Storage para armar el PDF con las fotos (mismo dominio, sin bloqueo CORS).
+# Fotos para el PDF: solo el bucket de PETFILE y solo imágenes (la función valida ruta, tipo y contenido).
+# Cualquier otra dirección bajo /fs/ no existe.
 [[redirects]]
-  from = "/fs/*"
-  to = "https://firebasestorage.googleapis.com/:splat"
+  from = "/fs/v0/b/petfile-15279.firebasestorage.app/o/*"
+  to = "/.netlify/functions/fs-photo/:splat"
   status = 200
   force = true
