@@ -41,7 +41,8 @@ for (const part of ['app', 'auth', 'firestore', 'storage']) {
 const JSPDF = '2.5.1';
 if (version('jspdf') !== JSPDF) fail(`jspdf instalado ${version('jspdf')}, se esperaba ${JSPDF}`);
 cpSync(join(MOD, 'jspdf/dist/jspdf.umd.min.js'), join(VENDOR, 'jspdf.umd.min.js'));
-html = swap(html, `https://cdnjs.cloudflare.com/ajax/libs/jspdf/${JSPDF}/jspdf.umd.min.js`, 'vendor/jspdf.umd.min.js');
+let appJs = readFileSync(join(OUT, 'app.js'), 'utf8');
+appJs = swap(appJs, `https://cdnjs.cloudflare.com/ajax/libs/jspdf/${JSPDF}/jspdf.umd.min.js`, 'vendor/jspdf.umd.min.js');
 
 // Fuentes: las mismas familias y nombres que declara el CSS de la app
 const FONTS = [
@@ -68,8 +69,22 @@ html = swap(html, 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:
 
 // Nada de la interfaz debe quedar cargándose desde internet.
 for (const host of ['gstatic.com', 'fonts.googleapis.com', 'fonts.gstatic.com', 'cdnjs.cloudflare.com']) {
-  if (html.includes(host)) fail(`quedó una referencia a ${host}`);
+  if (html.includes(host) || appJs.includes(host)) fail(`quedó una referencia a ${host}`);
 }
+// Política de seguridad de la app: la de la web, con los recursos ya empaquetados localmente.
+const CSP = [
+  "default-src 'none'", "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'", "style-src-elem 'self'", "style-src-attr 'unsafe-inline'",
+  "font-src 'self'", "img-src 'self' data: blob: https://firebasestorage.googleapis.com",
+  "connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebasestorage.googleapis.com https://formsubmit.co",
+  "manifest-src 'self'", "form-action 'self'", "base-uri 'none'", "object-src 'none'",
+].join('; ');
+html = swap(html, '<head>', `<head>\n<meta http-equiv="Content-Security-Policy" content="${CSP}">`);
 writeFileSync(join(OUT, 'index.html'), html);
+for (const page of ['privacidad.html', 'terminos.html']) {
+  const legal = readFileSync(join(OUT, page), 'utf8');
+  writeFileSync(join(OUT, page), swap(legal, '<head>', `<head>\n<meta http-equiv="Content-Security-Policy" content="${CSP}">`));
+}
+writeFileSync(join(OUT, 'app.js'), appJs);
 if (!existsSync(join(OUT, 'icon-512.png'))) fail('faltan archivos de public/');
 console.log('build-mobile: www/ listo');
