@@ -1,7 +1,7 @@
 // Concurrencia con el SDK real y el emulador local (Java requerido). Proyecto demo: no puede tocar producción.
 // Comprueba lo que el simulador no puede: reglas, combinación real en servidor y cola real sin conexión.
 const { test, before, after, beforeEach } = require('node:test'); const assert = require('node:assert'); const fs = require('fs'), path = require('path');
-const { install, pause } = require('../lib/emulator-log.cjs'); const log = install(); const { readDoc, mustRead } = require('../lib/emulator-read.cjs');
+const { install, pause } = require('../lib/emulator-log.cjs'); const log = install(); const { readDoc, mustRead } = require('../lib/emulator-read.cjs'); const { noOpenSockets } = require('../lib/open-sockets.cjs');
 const { initializeTestEnvironment } = require('@firebase/rules-unit-testing');
 const { doc, setDoc, updateDoc, getDoc, deleteDoc, arrayUnion, arrayRemove, writeBatch, onSnapshot, disableNetwork, enableNetwork, Timestamp } = require('firebase/firestore');
 const P = 'families/f/pets/p', rec = (id, more) => ({ id, type: 'consulta', title: id, date: '2026-01-01', ...more }); let env; const ctx = {};
@@ -14,7 +14,7 @@ const ok = (name, fn) => test(name, { timeout: 90000 }, async () => { const s = 
 // Rechazo esperado: se exige el código exacto, no cualquier error.
 const rejected = async (p, codes) => { await assert.rejects(p, (e) => { assert.ok(codes.includes(e.code), `código inesperado: ${e.code}`); return true; }); };
 before(async () => { env = await initializeTestEnvironment({ projectId: 'demo-petfile', firestore: { rules: fs.readFileSync(path.join(__dirname, '..', '..', 'firestore.rules'), 'utf8') } }); });
-after(async () => { await env.cleanup(); console.log(`Resumen del SDK: ${log.totals.aborted} reintentos por bloqueo (código 10), ${log.totals.denied} rechazos de reglas (código 7), ${log.totals.uncaught} errores de listener sin atender.`); });
+after(async () => { await env.cleanup(); console.log(`Resumen del SDK: ${log.totals.aborted} reintentos por bloqueo (código 10), ${log.totals.denied} rechazos de reglas (código 7), ${log.totals.uncaught} errores de listener sin atender.`); await noOpenSockets(); });
 beforeEach(() => env.withSecurityRulesDisabled(async (c) => { const d = c.firestore(); await setDoc(doc(d, 'families/f'), { owner: 'a', members, memberInfo: {}, code: 'ABCDEF', paidUntil: Timestamp.fromMillis(Date.now() + 864e7), name: 'F' }); await setDoc(doc(d, P), { id: 'p', name: 'C', weight: 12.5, entries: [rec('r1'), { title: 'sin id', date: '2019-01-01' }] }); }));
 
 ok('Preparación: cada prueba arranca con la mascota y su historial, y leer una mascota inexistente lo informa', async () => {
@@ -32,12 +32,12 @@ ok('Seis integrantes escriben a la vez: quedan los 60 registros (los bloqueos de
 });
 ok('Sin conexión: dos integrantes guardan, se ve localmente, y al volver quedan ambos', async () => {
   const A = db('a'), B = db('b'), seen = [], errs = []; const un = onSnapshot(doc(A, P), (s) => seen.push((s.data().entries || []).length), (e) => errs.push(e.code));
-  try { await pause(200); await disableNetwork(A); await disableNetwork(B);
+  let offline = true; try { await pause(200); await disableNetwork(A); await disableNetwork(B);
     const w1 = updateDoc(doc(A, P), { entries: arrayUnion(rec('Ana')) }), w2 = updateDoc(doc(B, P), { entries: arrayUnion(rec('Beto')) }), w3 = edit(A, rec('r1'), rec('r1', { notes: 'offline' }));
     await pause(200); assert.strictEqual((await read()).entries.length, 2, 'nada llegó al servidor'); assert.ok(seen.includes(3), 'quien guarda lo ve de inmediato');
-    await enableNetwork(A); await enableNetwork(B); await Promise.all([w1, w2, w3]);
+    await enableNetwork(A); await enableNetwork(B); offline = false; await Promise.all([w1, w2, w3]);
     const es = (await read()).entries; assert.strictEqual(es.length, 4); assert.ok(es.some((e) => e.notes === 'offline')); assert.deepStrictEqual(errs, [], 'el listener no debe recibir errores');
-  } finally { un(); await enableNetwork(A); await enableNetwork(B); }
+  } finally { un(); if (offline) { await enableNetwork(A); await enableNetwork(B); } } // Solo si la prueba falló antes: reactivar una red ya activa deja una conexión abierta y el proceso no termina.
 });
 ok('Sincronización: los otros integrantes reciben el cambio sin errores en el listener', async () => {
   const errs = [], got = {}; const uns = ['b', 'c'].map((u) => onSnapshot(doc(db(u), P), (s) => { got[u] = (s.data().entries || []).length; }, (e) => errs.push(`${u}:${e.code}`)));

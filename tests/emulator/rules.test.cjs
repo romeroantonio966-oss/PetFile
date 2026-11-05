@@ -10,7 +10,7 @@ const FUT = Timestamp.fromMillis(Date.now() + 864e7), PAST = Timestamp.fromMilli
 const db = (u) => env.authenticatedContext(u).firestore();
 const seed = (fn) => env.withSecurityRulesDisabled((c) => fn(c.firestore()));
 before(async () => { env = await initializeTestEnvironment({ projectId: 'demo-petfile', firestore: { rules: fs.readFileSync(path.join(ROOT, 'firestore.rules'), 'utf8') }, storage: { rules: fs.readFileSync(path.join(ROOT, 'storage.rules'), 'utf8') } }); });
-after(async () => { await env.cleanup(); console.log(`Rechazos de reglas registrados por el SDK en esta suite: ${log.totals.denied} (esperados en pruebas negativas). Reintentos por bloqueo: ${log.totals.aborted}.`); });
+after(async () => { await env.cleanup(); console.log(`Rechazos de reglas registrados por el SDK en esta suite: ${log.totals.denied} (esperados en pruebas negativas). Reintentos por bloqueo: ${log.totals.aborted}.`); await require('../lib/open-sockets.cjs').noOpenSockets(); });
 beforeEach(async () => { await env.clearFirestore(); await seed(async (d) => {
   await setDoc(doc(d, 'families/f'), { owner: 'o', members: ['o', 'm'], memberInfo: { o: { name: 'O', email: 'o@x' }, m: { name: 'M', email: 'm@x' } }, code: 'ABCDEF', paidUntil: FUT, name: 'F' });
   await setDoc(doc(d, 'families/f/pets/p'), { id: 'p', name: 'C', entries: [] });

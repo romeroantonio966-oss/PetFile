@@ -33,3 +33,14 @@ test('Ninguna prueba toma el retorno de withSecurityRulesDisabled', () => {
   assert.match("const kept = await env.withSecurityRulesDisabled(async (c) => (await x).data().entries.length);", TAKES_RETURN);
   for (const f of ['emulator/concurrency.test.cjs', 'emulator/rules.test.cjs', 'load/emulator-load.cjs']) assert.doesNotMatch(fs.readFileSync(path.join(__dirname, f), 'utf8'), TAKES_RETURN, f);
 });
+
+// Regresión: una llamada de más a enableNetwork dejaba una conexión del SDK abierta y el proceso seguía vivo al terminar las pruebas.
+const net = require('net'); const { noOpenSockets, openSockets } = require('./lib/open-sockets.cjs');
+test('El control de cierre pasa sin conexiones y falla si queda una abierta', async () => {
+  await noOpenSockets({ wait: 200 });
+  const srv = net.createServer().listen(0); await new Promise((r) => srv.once('listening', r)); const c = net.connect(srv.address().port); await new Promise((r) => c.once('connect', r));
+  assert.ok(openSockets() > 0); await assert.rejects(noOpenSockets({ wait: 300 }), /Quedan \d+ conexiones abiertas/);
+  c.destroy(); for (const k of [...(srv._conns || [])]) k.destroy(); await new Promise((r) => srv.close(r)); await noOpenSockets({ wait: 2000 });
+});
+test('La suite no reactiva una red ya activa', () => { const src = fs.readFileSync(path.join(__dirname, 'emulator', 'concurrency.test.cjs'), 'utf8'); assert.doesNotMatch(src, /finally \{[^}\n]*(?<!if \(offline\) \{ await )enableNetwork\(A\)/); assert.match(src, /if \(offline\) \{ await enableNetwork/); assert.match(src, /await noOpenSockets\(\)/); });
+test('La aplicación no usa enableNetwork ni disableNetwork', () => { assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8'), /(enable|disable)Network/); });
