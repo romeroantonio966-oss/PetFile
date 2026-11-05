@@ -44,3 +44,15 @@ test('El control de cierre pasa sin conexiones y falla si queda una abierta', as
 });
 test('La suite no reactiva una red ya activa', () => { const src = fs.readFileSync(path.join(__dirname, 'emulator', 'concurrency.test.cjs'), 'utf8'); assert.doesNotMatch(src, /finally \{[^}\n]*(?<!if \(offline\) \{ await )enableNetwork\(A\)/); assert.match(src, /if \(offline\) \{ await enableNetwork/); assert.match(src, /await noOpenSockets\(\)/); });
 test('La aplicación no usa enableNetwork ni disableNetwork', () => { assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8'), /(enable|disable)Network/); });
+
+// Regresión: la prueba de carga guardaba el contexto y volvía a llamar firestore(); solo salía la primera escritura de cada integrante.
+const { clientPool, auditWrites } = require('./lib/emulator-clients.cjs');
+const strictEnv = () => { let ctxs = 0; return { get ctxs() { return ctxs; }, authenticatedContext: () => { ctxs++; let used = false; const client = {}; return { firestore: () => { if (used) throw Object.assign(new Error('Firestore has already been started'), { code: 'failed-precondition' }); used = true; return client; } }; } }; };
+test('Un cliente por usuario, sin reconfigurar Firestore', () => { const env = strictEnv(), db = clientPool(env), a = db('a'); assert.strictEqual(db('a'), a); assert.notStrictEqual(db('b'), a); assert.strictEqual(env.ctxs, 2); });
+test('El error original sí falla con el simulador de la biblioteca', () => { const env = strictEnv(), ctx = {}, bad = (u) => (ctx[u] = ctx[u] || env.authenticatedContext(u)).firestore(); bad('a'); assert.throws(() => bad('a'), /already been started/); });
+test('Ninguna prueba guarda el contexto para volver a pedir firestore()', () => { for (const f of ['load/emulator-load.cjs', 'emulator/concurrency.test.cjs']) assert.doesNotMatch(fs.readFileSync(path.join(__dirname, f), 'utf8'), /authenticatedContext\(\w+\)\)\.firestore\(\)/, f); assert.match(fs.readFileSync(path.join(__dirname, 'load/emulator-load.cjs'), 'utf8'), /clientPool\(env\)/); assert.doesNotMatch("const db = (u) => (ctx[u] = ctx[u] || env.authenticatedContext(u).firestore());", /authenticatedContext\(\w+\)\)\.firestore\(\)/); assert.match("(ctx[u] = ctx[u] || env.authenticatedContext(u)).firestore()", /authenticatedContext\(\w+\)\)\.firestore\(\)/); });
+test('Auditoría: distingue perdidos, sin confirmar y correcto', () => {
+  assert.deepStrictEqual(auditWrites({ attempted: 90, confirmed: 90, kept: 90 }).issues, []);
+  const never = auditWrites({ attempted: 90, confirmed: 6, kept: 6 }); assert.strictEqual(never.lost, 0); assert.strictEqual(never.unconfirmed, 84); assert.strictEqual(never.issues.length, 1, 'no es pérdida, pero sigue siendo fallo');
+  const lost = auditWrites({ attempted: 90, confirmed: 90, kept: 89 }); assert.strictEqual(lost.lost, 1); assert.match(lost.issues[0], /PÉRDIDA REAL/);
+});
