@@ -12,7 +12,14 @@ test('Cuenta, oculta el ruido clasificado y deja pasar lo demás', () => {
   try { const l = install(), s = l.snapshot(); console.warn(P + '10 Message: x'); console.warn(P + '7 Message: x'); console.warn('aviso normal'); assert.deepStrictEqual(l.since(s), { aborted: 1, denied: 1, uncaught: 0 }); assert.deepStrictEqual(seen, ['aviso normal']); } finally { console.warn = o; m.forEach(([k, f]) => { console[k] = f; }); }
 });
 test('Los archivos del emulador no se ejecutan en paralelo', () => { const s = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).scripts['test:rules']; assert.match(s, /tests\/emulator\/run\.cjs/); assert.doesNotMatch(s, /node --test tests\/emulator/); });
-test('El ejecutor corre los archivos uno por uno y falla si uno falla', () => { const src = fs.readFileSync(path.join(__dirname, 'emulator', 'run.cjs'), 'utf8'); assert.match(src, /spawnSync/); assert.ok(fs.readdirSync(path.join(__dirname, 'emulator')).filter((f) => f.endsWith('.test.cjs')).length >= 2); });
+test('Hay más de un archivo y el ejecutor no los lanza en paralelo', () => { const src = fs.readFileSync(path.join(__dirname, 'emulator', 'run.cjs'), 'utf8'); assert.match(src, /for \(const f of files\)/); assert.ok(fs.readdirSync(path.join(__dirname, 'emulator')).filter((f) => f.endsWith('.test.cjs')).length >= 2); });
+// Regresión: las conexiones que quedan abiertas no deben colgar la corrida ni ocultar fallos.
+const { runFile, nodeOk } = require('./lib/run-file.cjs'); const FX = (n) => path.join(__dirname, 'fixtures', n); const quick = { testTimeout: 2000, watchdog: 30000, stdio: 'pipe' };
+test('Conexión abierta tras pasar: termina con éxito y sin colgarse', () => { const t = Date.now(), r = runFile(FX('open-handle-pass.cjs'), quick); assert.strictEqual(r.ok, true, r.why); assert.ok(Date.now() - t < 20000); assert.doesNotMatch(r.output, /still pending/); });
+test('Conexión abierta tras fallar: sigue reportando el fallo', () => { const r = runFile(FX('open-handle-fail.cjs'), quick); assert.strictEqual(r.ok, false); assert.match(r.why, /código de salida/); assert.match(r.output, /fallo real/); });
+test('Promesa pendiente: falla por tiempo, no queda colgada', () => { const r = runFile(FX('pending-promise.cjs'), quick); assert.strictEqual(r.ok, false); assert.match(r.why, /código de salida/); assert.match(r.output, /timed out/); });
+test('El vigilante reporta una corrida que no termina', () => { const r = runFile(FX('pending-promise.cjs'), { testTimeout: 60000, watchdog: 1500, stdio: 'pipe' }); assert.strictEqual(r.ok, false); assert.match(r.why, /no terminó/); });
+test('Versión de Node', () => { assert.strictEqual(nodeOk('18.20.0'), false); assert.strictEqual(nodeOk('22.0.0'), true); assert.strictEqual(nodeOk('26.13.0'), true); });
 
 // Regresión: leer con withSecurityRulesDisabled devolvía siempre undefined, y una prueba de "mascota eliminada" pasaba sin comprobar nada.
 const { readDoc, mustRead } = require('./lib/emulator-read.cjs');
