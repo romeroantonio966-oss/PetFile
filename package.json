@@ -27,8 +27,8 @@
     "mobile:build": "node scripts/build-mobile.mjs",
     "mobile:sync": "npm run mobile:build && cap sync",
     "mobile:android": "npm run mobile:sync && cap open android",
-    "test": "npm run mobile:build && node --test tests/functions.test.cjs tests/security-ui.test.cjs tests/injection.test.cjs tests/csp.test.cjs",
-    "test:rules": "npx firebase-tools@13 emulators:exec --config firebase.emulator.json --project demo-petfile --only firestore,storage \"node --test tests/emulator/rules.test.cjs\"",
+    "test": "npm run mobile:build && node --test tests/functions.test.cjs tests/security-ui.test.cjs tests/injection.test.cjs tests/csp.test.cjs tests/concurrency.test.cjs",
+    "test:rules": "npx firebase-tools@13 emulators:exec --config firebase.emulator.json --project demo-petfile --only firestore,storage \"node --test tests/emulator/rules.test.cjs tests/emulator/concurrency.test.cjs\"",
     "test:load": "npx firebase-tools@13 emulators:exec --config firebase.emulator.json --project demo-petfile --only firestore,storage \"node tests/load/emulator-load.cjs\"",
     "measure": "node tests/load/measure-local.cjs && node tests/load/lost-update.cjs"
   }
