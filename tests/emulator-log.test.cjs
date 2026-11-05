@@ -13,3 +13,11 @@ test('Cuenta, oculta el ruido clasificado y deja pasar lo demás', () => {
 });
 test('Los archivos del emulador no se ejecutan en paralelo', () => { const s = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).scripts['test:rules']; assert.match(s, /tests\/emulator\/run\.cjs/); assert.doesNotMatch(s, /node --test tests\/emulator/); });
 test('El ejecutor corre los archivos uno por uno y falla si uno falla', () => { const src = fs.readFileSync(path.join(__dirname, 'emulator', 'run.cjs'), 'utf8'); assert.match(src, /spawnSync/); assert.ok(fs.readdirSync(path.join(__dirname, 'emulator')).filter((f) => f.endsWith('.test.cjs')).length >= 2); });
+
+// Regresión: leer con withSecurityRulesDisabled devolvía siempre undefined, y una prueba de "mascota eliminada" pasaba sin comprobar nada.
+const { readDoc, mustRead } = require('./lib/emulator-read.cjs');
+const voidEnv = { withSecurityRulesDisabled: async (cb) => { await cb({}); } }; // Igual que la biblioteca: descarta el retorno.
+const found = (d) => async () => ({ exists: () => d !== undefined, data: () => d });
+test('La lectura devuelve el dato aunque la biblioteca descarte el retorno', async () => { assert.deepStrictEqual(await mustRead(voidEnv, 'families/f/pets/p', found({ name: 'C' })), { name: 'C' }); assert.strictEqual((await readDoc(voidEnv, 'x/y', found(undefined))).exists, false); });
+test('Si falta el documento, el error dice cuál y no undefined', async () => { await assert.rejects(mustRead(voidEnv, 'families/f/pets/p', found(undefined)), /Falta families\/f\/pets\/p.*families\/f tampoco existe/); });
+test('Ninguna prueba toma el retorno de withSecurityRulesDisabled', () => { for (const f of ['emulator/concurrency.test.cjs', 'emulator/rules.test.cjs', 'load/emulator-load.cjs']) assert.doesNotMatch(fs.readFileSync(path.join(__dirname, f), 'utf8'), /(=|return|await \w+\.\w+\()\s*(await\s+)?env\.withSecurityRulesDisabled\([^\n]*\.(data|entries)\b/, f); });
