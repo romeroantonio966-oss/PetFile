@@ -1,5 +1,6 @@
 // Reglas contra el emulador local (Java requerido). Proyecto demo: no puede tocar producción.
 // Ejecutar: npm run test:rules
+const log = require('../lib/emulator-log.cjs').install(); // Los rechazos de reglas de esta suite son esperados: assertFails los exige y assertSucceeds falla si aparece uno indebido.
 const { test, before, after, beforeEach } = require('node:test'); const assert = require('node:assert'); const fs = require('fs'), path = require('path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
 const { doc, setDoc, updateDoc, getDoc, deleteDoc, arrayUnion, arrayRemove, deleteField, serverTimestamp, Timestamp, writeBatch } = require('firebase/firestore');
@@ -9,7 +10,7 @@ const FUT = Timestamp.fromMillis(Date.now() + 864e7), PAST = Timestamp.fromMilli
 const db = (u) => env.authenticatedContext(u).firestore();
 const seed = (fn) => env.withSecurityRulesDisabled((c) => fn(c.firestore()));
 before(async () => { env = await initializeTestEnvironment({ projectId: 'demo-petfile', firestore: { rules: fs.readFileSync(path.join(ROOT, 'firestore.rules'), 'utf8') }, storage: { rules: fs.readFileSync(path.join(ROOT, 'storage.rules'), 'utf8') } }); });
-after(() => env.cleanup());
+after(async () => { await env.cleanup(); console.log(`Rechazos de reglas registrados por el SDK en esta suite: ${log.totals.denied} (esperados en pruebas negativas). Reintentos por bloqueo: ${log.totals.aborted}.`); });
 beforeEach(async () => { await env.clearFirestore(); await seed(async (d) => {
   await setDoc(doc(d, 'families/f'), { owner: 'o', members: ['o', 'm'], memberInfo: { o: { name: 'O', email: 'o@x' }, m: { name: 'M', email: 'm@x' } }, code: 'ABCDEF', paidUntil: FUT, name: 'F' });
   await setDoc(doc(d, 'families/f/pets/p'), { id: 'p', name: 'C', entries: [] });
