@@ -20,4 +20,9 @@ const voidEnv = { withSecurityRulesDisabled: async (cb) => { await cb({}); } }; 
 const found = (d) => async () => ({ exists: () => d !== undefined, data: () => d });
 test('La lectura devuelve el dato aunque la biblioteca descarte el retorno', async () => { assert.deepStrictEqual(await mustRead(voidEnv, 'families/f/pets/p', found({ name: 'C' })), { name: 'C' }); assert.strictEqual((await readDoc(voidEnv, 'x/y', found(undefined))).exists, false); });
 test('Si falta el documento, el error dice cuál y no undefined', async () => { await assert.rejects(mustRead(voidEnv, 'families/f/pets/p', found(undefined)), /Falta families\/f\/pets\/p.*families\/f tampoco existe/); });
-test('Ninguna prueba toma el retorno de withSecurityRulesDisabled', () => { for (const f of ['emulator/concurrency.test.cjs', 'emulator/rules.test.cjs', 'load/emulator-load.cjs']) assert.doesNotMatch(fs.readFileSync(path.join(__dirname, f), 'utf8'), /(=|return|await \w+\.\w+\()\s*(await\s+)?env\.withSecurityRulesDisabled\([^\n]*\.(data|entries)\b/, f); });
+const TAKES_RETURN = /withSecurityRulesDisabled\([^\n{]*\.(data\(\)|entries)/;
+test('Ninguna prueba toma el retorno de withSecurityRulesDisabled', () => {
+  assert.match("const read = () => env.withSecurityRulesDisabled(async (c) => (await getDoc(doc(c.firestore(), P))).data());", TAKES_RETURN);
+  assert.match("const kept = await env.withSecurityRulesDisabled(async (c) => (await x).data().entries.length);", TAKES_RETURN);
+  for (const f of ['emulator/concurrency.test.cjs', 'emulator/rules.test.cjs', 'load/emulator-load.cjs']) assert.doesNotMatch(fs.readFileSync(path.join(__dirname, f), 'utf8'), TAKES_RETURN, f);
+});
