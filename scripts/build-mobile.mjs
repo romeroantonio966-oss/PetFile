@@ -38,7 +38,7 @@ for (const part of ['app', 'auth', 'firestore', 'storage']) {
 }
 
 // jsPDF: misma versión que usa la web
-const JSPDF = '2.5.1';
+const JSPDF = '4.2.1';
 if (version('jspdf') !== JSPDF) fail(`jspdf instalado ${version('jspdf')}, se esperaba ${JSPDF}`);
 cpSync(join(MOD, 'jspdf/dist/jspdf.umd.min.js'), join(VENDOR, 'jspdf.umd.min.js'));
 let appJs = readFileSync(join(OUT, 'app.js'), 'utf8');
