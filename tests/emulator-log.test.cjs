@@ -59,7 +59,7 @@ test('Auditoría: distingue perdidos, sin confirmar y correcto', () => {
 
 // El respaldo de las reglas publicadas no debe modificarse: es la base para restaurar producción.
 test('Respaldo de reglas publicadas intacto', () => {
-  const crypto = require('crypto'), dir = path.join(__dirname, '..', 'rules-backup'); const want = fs.readFileSync(path.join(dir, 'README.md'), 'utf8').match(/SHA-256: `([0-9a-f]{64})`/)[1];
+  const crypto = require('crypto'), dir = path.join(__dirname, '..', 'rules-backup'); const want = fs.readFileSync(path.join(dir, 'README.md'), 'utf8').match(/SHA-256[^`]*`([0-9a-f]{64})`/)[1];
   assert.strictEqual(crypto.createHash('sha256').update(fs.readFileSync(path.join(dir, 'firestore.published-2026-11-06.rules'), 'utf8').replace(/\r\n/g, '\n')).digest('hex'), want); // Windows puede descargarlo con CRLF
   assert.ok(fs.readdirSync(path.join(__dirname, 'emulator')).includes('compat-main.test.cjs'));
 });
