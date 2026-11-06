@@ -44,6 +44,20 @@ service cloud.firestore {
         && (!('photo' in d) || d.photo == null || imageOk(d.photo, 900000))
         && (!('entries' in d) || (d.entries is list && d.entries.size() <= 2000));
     }
+    // Receta: misma forma que guarda la app. Las recetas existentes se siguen pudiendo leer y eliminar.
+    function recetaOk(rid, d) {
+      return idOk(rid) && idOk(d.get('petId', ''))
+        && d.keys().hasOnly(['petId', 'title', 'date', 'vet', 'notes', 'thumb', 'createdAt'])
+        && imageOk(d.get('thumb', ''), 120000)
+        && optStr(d, 'title', 1000) && optStr(d, 'vet', 1000) && optStr(d, 'notes', 100000)
+        && (!('date' in d) || (d.date is string && d.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
+        && (!('createdAt' in d) || d.createdAt is number);
+    }
+    function recetaImgOk(rid, d) {
+      return idOk(rid) && idOk(d.get('petId', ''))
+        && d.keys().hasOnly(['img', 'petId'])
+        && imageOk(d.get('img', ''), 950000);
+    }
     function pushOk(d) {
       return d.keys().hasOnly(['sub', 'tz', 'lang', 'createdAt', 'updatedAt'])
         && d.sub is map && d.sub.endpoint is string && d.sub.endpoint.size() <= 1000
@@ -149,11 +163,11 @@ service cloud.firestore {
       // Recetas: datos y miniatura en "recetas"; la foto completa aparte, en "recetasImg".
       match /recetas/{rid} {
         allow read, delete: if canUse(fid);
-        allow create, update: if canUse(fid) && imageOk(request.resource.data.thumb, 120000);
+        allow create, update: if canUse(fid) && recetaOk(rid, request.resource.data);
       }
       match /recetasImg/{rid} {
         allow read, delete: if canUse(fid);
-        allow create, update: if canUse(fid) && imageOk(request.resource.data.img, 950000);
+        allow create, update: if canUse(fid) && recetaImgOk(rid, request.resource.data);
       }
     }
   }
