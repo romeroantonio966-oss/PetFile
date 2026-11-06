@@ -342,6 +342,8 @@ function cleanPet(d){
   const last=new Map();o.entries.forEach((e,i)=>{const k=e.id||'#'+i;last.delete(k);last.set(k,e)});o.entries=[...last.values()];
   return o;
 }
+/* Receta: un dato con tipo incorrecto se descarta al leer; lo guardado no cambia y la receta sigue visible para poder eliminarla. */
+function cleanReceta(d){const o=Object.assign({},d);['petId','title','date','vet','notes','thumb'].forEach(k=>{if(typeof o[k]!=='string')delete o[k]});return o}
 function listenFamily(fid){
   stopFamily();fb.famId=fid;state.loading=true;render();
   const uid=fb.user.uid;
@@ -762,7 +764,7 @@ state.recetas={};
 const _listenFamily=listenFamily;
 listenFamily=function(fid){
   _listenFamily(fid);state.recetas={};
-  fb.famUnsubs.push(famRef(fid).collection('recetas').onSnapshot(snap=>{const m={};snap.docs.forEach(d=>{m[d.id]=Object.assign({},d.data(),{id:d.id})});state.recetas=m;render()},e=>console.warn(e)));
+  fb.famUnsubs.push(famRef(fid).collection('recetas').onSnapshot(snap=>{const m={};snap.docs.forEach(d=>{m[d.id]=cleanReceta(Object.assign({},d.data(),{id:d.id}))});state.recetas=m;render()},e=>console.warn(e)));
 };
 const recetasOf=pid=>Object.values(state.recetas).filter(r=>r.petId===pid).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
 function recetasSection(p){
@@ -953,7 +955,7 @@ document.addEventListener('click',ev=>{
   switch(a){
     case'rc-new':{stop();const p=state.pets[el.dataset.pet]||state.pets[state.view.id];if(!p)break;if(!isPremium()){premiumSheet('prem_rc');break}closeSheet();recetaForm(p);break}
     case'rc-view':stop();recetaView(el.dataset.id);break;
-    case'rc-ask-del':stop();$('#rc-delbox').innerHTML=`<div class="confirm"><span style="font-size:14px">${t('rc_delQ')}</span><div style="display:flex;gap:8px"><button class="btn sm danger" data-act="rc-del" data-id="${el.dataset.id}">${t('del')}</button><button class="btn sm ghost" data-act="close">${t('cancel')}</button></div></div>`;break;
+    case'rc-ask-del':stop();$('#rc-delbox').innerHTML=`<div class="confirm"><span style="font-size:14px">${t('rc_delQ')}</span><div style="display:flex;gap:8px"><button class="btn sm danger" data-act="rc-del" data-id="${esc(el.dataset.id)}">${t('del')}</button><button class="btn sm ghost" data-act="close">${t('cancel')}</button></div></div>`;break;
     case'rc-del':stop();recetaDelete(el.dataset.id);break;
     case'nt-on':stop();ntOn(el);break;
     case'nt-off':stop();ntOff();break;
