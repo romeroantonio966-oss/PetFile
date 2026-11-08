@@ -25,6 +25,16 @@ Están apagadas porque Firebase Storage todavía no está activo. Para encenderl
 2. En `public/index.html`, poner `RECORD_PHOTOS=true`.
 3. Volver a agregar a la lista Premium el tope de 5 fotos, y revisar el texto de ayuda de Recetas y `privacidad.html`.
 
+## Encender los certificados de pedigrí y microchip (pendiente)
+
+Pedigrí y microchip funcionan sin esto. Solo los certificados adjuntos (foto o PDF) esperan, porque usan la colección `certs` y necesitan la regla nueva:
+
+1. `npm run test:rules` sin fallos.
+2. Publicar solo las reglas de Firestore: `firebase deploy --only firestore:rules` (respaldo y vuelta atrás en `rules-backup/`).
+3. En `public/app.js`, poner `CERT_FILES=true` y publicar la web.
+
+Los certificados se guardan en `families/{familia}/certs/{mascota}_{ped|chip}`, nunca dentro de la mascota, con un máximo de unos 680 KB.
+
 ## Pruebas de seguridad
 
 - `npm test`: funciones, ataques XSS, flujos normales y política de seguridad, con Firebase simulado. Requiere `npx playwright install chromium` la primera vez.

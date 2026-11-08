@@ -305,7 +305,7 @@ function saveEntry(petId,base,next){
   if(cur&&sameVal(cur,out))return;
   changeEntries(petId,[next.id],[out]);
 }
-function removePet(id){delete fb.rawEntries[id];delete state.pets[id];if(fb.petsCol)fb.petsCol.doc(id).delete().catch(e=>{console.warn(e);toast(t('t_cloudErr'))})}
+function removePet(id){const pp=state.pets[id];if(pp&&fb.famId)['ped','chip'].forEach(k=>{const d=docOf(pp,k);if(d&&d.cert)certRef(id,k).delete().catch(e=>console.warn(e))});delete fb.rawEntries[id];delete state.pets[id];if(fb.petsCol)fb.petsCol.doc(id).delete().catch(e=>{console.warn(e);toast(t('t_cloudErr'))})}
 function stopFamily(){fb.famUnsubs.forEach(u=>{try{u()}catch(e){}});fb.famUnsubs=[];fb.fam=null;fb.famId=null;fb.petsCol=null;fb.rawEntries={};state.pets={}}
 function stopAll(){stopFamily();if(fb.userUnsub){try{fb.userUnsub()}catch(e){}fb.userUnsub=null}}
 
@@ -340,6 +340,7 @@ function cleanPet(d){
     return x});
   /* Dos ediciones del mismo registro sin conexión dejan dos versiones: se muestra la última en llegar al servidor. */
   const last=new Map();o.entries.forEach((e,i)=>{const k=e.id||'#'+i;last.delete(k);last.set(k,e)});o.entries=[...last.values()];
+  ['ped','chip'].forEach(k=>{const K=DOCS[k].key;if(K in o){const c=cleanDoc(o[K],k);if(c)o[K]=c;else delete o[K]}});
   return o;
 }
 /* Receta: un dato con tipo incorrecto se descarta al leer; lo guardado no cambia y la receta sigue visible para poder eliminarla. */
@@ -1114,6 +1115,7 @@ function petView(p){
   <button class="round l" data-act="home" aria-label="${t('back')}">${I.back}</button><button class="round r" data-act="edit-pet" data-pet="${esc(p.id)}" aria-label="${t('editData')}">${I.edit}</button>
   <button class="camera" ${isPremium()?`data-act="edit-pet" data-pet="${esc(p.id)}"`:`data-act="premium" data-why="prem_photo"`} aria-label="${p.photo?t('pf_chPh'):t('pf_addPh')}">${I.camera}</button><div class="cap"><h1>${esc(p.name)}</h1><div class="sub">${esc(spOf(p))}</div></div></section>
   <div class="facts"><div class="fact"><span class="label">${t('f_age')}</span><span class="v">${ageOf(p.birth)}</span></div><div class="fact"><span class="label">${t('f_weight')}</span><span class="v">${p.weight?esc(p.weight)+' kg':'—'}</span></div><div class="fact"><span class="label">${t('f_breed')}</span><span class="v">${esc(p.breed||'—')}</span></div><div class="fact"><span class="label">${t('f_sex')}</span><span class="v">${esc(sxL(p.sex)||'—')}</span></div></div>`;
+  s+=docSummary(p);
   if(rem.length)s+=`<section class="sec"><div class="sec-h"><h2>${t('pending')}</h2></div><div class="list">${rem.map(r=>remRow(r,false)).join('')}</div></section>`;
   if(state.caps.sample&&state.caps.img)s+=`<div class="reader"><div><b>${t('rx_t')}</b><p>${t('rx_d')}</p></div><label class="btn sm" for="rxfile">${I.scan.replace('<svg','<svg width="18" height="18"')}${t('rx_btn')}</label><input id="rxfile" type="file" accept="image/*" hidden></div>`;
   s+=`<section class="sec"><div class="sec-h"><h2>${t('history')}</h2><div class="hist-acts">${entries.length?`<button class="lnk" data-act="export" data-pet="${esc(p.id)}">${t('exp_btn')}${isPremium()?'':PBADGE()}</button>`:''}<button class="lnk" data-act="fab">${t('add_plus')}</button></div></div>`;
@@ -1148,7 +1150,7 @@ function exportSheet(p){const b=(a,ic,c,x,d)=>`<button type="button" data-act="$
 async function printHistory(p){let d=$('#printdoc');if(!d){d=document.createElement('div');d.id='printdoc';document.body.appendChild(d)}
   const rows=expRows(p,await legacyFull(p));d.innerHTML=`<div class="pd-h">${safeImg(p.photo)?`<img src="${esc(safeImg(p.photo))}" alt="">`:''}<div><small>${t('exp_doc')}</small><b>${esc(p.name)}</b><small>${esc(expSub(p))}</small></div></div>${rows.map(r=>`<div class="pd-r"><div class="d">${esc(r.date)}</div><div><div class="y" style="color:var(${r.color})">${esc(r.type)}</div><div class="tt">${esc(r.title)}</div>${r.meta?`<div class="m">${esc(r.meta)}</div>`:''}${r.notes?`<div style="white-space:pre-wrap">${esc(r.notes)}</div>`:''}${r.photos.length?`<div class="has">${t('ph_n',r.photos.length)}</div>`:''}</div></div>`).join('')}<p class="pd-f">${t('exp_by')} · ${t('exp_gen')} ${fmtDate(todayStr())}</p>${rows.flatMap(r=>r.photos.map(x=>`<div class="pd-att"><b>${esc(r.type)}: ${esc(r.title)}</b><div class="m">${esc(r.date)}</div><img src="${esc(x)}" alt=""></div>`)).join('')}`;
   await Promise.all([...d.querySelectorAll('img')].map(i=>i.decode().catch(()=>{})));window.print()}
-function loadJsPdf(){return window.jspdf?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js';s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
+function loadJsPdf(){return window.jspdf?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='vendor/jspdf.umd.min.js';s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
 function circlePng(src){return new Promise(ok=>{if(!src)return ok(null);const i=new Image();i.onload=()=>{try{const c=document.createElement('canvas');c.width=c.height=320;const x=c.getContext('2d'),m=Math.min(i.naturalWidth||320,i.naturalHeight||320);x.beginPath();x.arc(160,160,160,0,7);x.clip();if(/^data:image\/svg/.test(src))x.drawImage(i,0,0,320,320);else x.drawImage(i,(i.naturalWidth-m)/2,(i.naturalHeight-m)/2,m,m,0,0,320,320);ok(c.toDataURL('image/png'))}catch(e){ok(null)}};i.onerror=()=>ok(null);i.src=src})}
 /* /fs es un proxy de Netlify hacia Firebase Storage (mismo dominio, sin bloqueo CORS). */
 async function photoJpeg(url){const inline=IMG_DATA_RE.test(String(url));if(!inline&&!String(url).startsWith(IMG_REMOTE_PREFIX))throw new Error('foto');let u=url;if(!inline){const r=await fetch(url.replace('https://firebasestorage.googleapis.com','/fs'));if(!r.ok)throw new Error('foto '+r.status);u=URL.createObjectURL(await r.blob())}try{return await new Promise((ok,no)=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=i.naturalWidth||900;c.height=i.naturalHeight||1200;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(i,0,0,c.width,c.height);ok({d:c.toDataURL('image/jpeg',.85),w:c.width,h:c.height})};i.onerror=no;i.src=u})}finally{URL.revokeObjectURL(u)}}
@@ -1173,9 +1175,135 @@ function typePicker(p){
   const rx=state.caps.sample&&state.caps.img;
   openSheet(`<div><div class="label">${esc(p.name)}</div><h2>${t('pick_t')}</h2></div><div class="types">${rx?`<button class="wide" data-act="pick-rx"><span class="ticon">${I.scan}</span><span>${t('pick_rx')}<small>${t('pick_rx_d')}</small></span></button>`:''}${Object.keys(TYPE_META).map(k=>{const ty=TT(k),lk=false;return `<button data-act="${lk?'premium':'new-entry'}" data-type="${k}"${lk?' data-into="tp-prem" data-why="prem_med" class="lockedt"':''} style="--tc:var(${ty.color})${ty.wide?';grid-column:1/-1':''}"><span class="ticon">${I[ty.icon]}</span><span>${ty.label}${lk?PBADGE():''}<small>${ty.hint}</small></span></button>`}).join('')}<div id="tp-prem" hidden style="grid-column:1/-1"></div></div>`);
 }
+/* ---------- Pedigrí y microchip ----------
+   Se guardan dentro de la mascota (pedigree y microchip) como textos cortos y se actualizan sin tocar el resto de la mascota.
+   Nombre, especie, raza, sexo, peso y nacimiento no se copian: se toman de la ficha. Marcar "No" no borra nada: queda on:false
+   con los datos, y se recuperan marcando "Sí". */
+const DOCS={
+  ped:{key:'pedigree',pre:'pd',req:['regName','regNo','owner'],sec:[['ped_s1',[['regName'],['regNo'],['tattoo'],['kennel'],['assoc']]],['ped_s2',[['sire'],['sireNo'],['dam'],['damNo']]],['ped_s3',[['owner'],['address',,'area'],['phone',,'tel'],['transfer',,'date'],['notes',,'area']]]]},
+  chip:{key:'microchip',pre:'mc',req:['number','owner'],sec:[['chip_s1',[['number',,'chip'],['color'],['marks',,'area']]],['chip_s2',[['implant',,'date'],['vet'],['clinic'],['vetPhone',,'tel'],['notes',,'area']]],['chip_s3',[['owner'],['ownerPhone',,'tel'],['ownerAddress',,'area']]]]}
+};
+const DOC_FIELDS=k=>DOCS[k].sec.flatMap(s=>s[1].map(f=>f[0]));
+const DOC_MAX=(f,ty)=>ty==='area'?(f==='notes'||f==='marks'?1000:300):ty==='date'?10:120;
+const CHIP_RE=/^[0-9A-F]{9,15}$/,TEL_RE=/^[0-9+()\s.-]{6,20}$/,DAY_RE=/^\d{4}-\d{2}-\d{2}$/;
+let CERT_FILES=false; /* Certificados adjuntos: se encienden al publicar la regla "certs" de firestore.rules (ver LEEME.md). */
+/* Normaliza lo leído de Firestore: solo textos conocidos, on como booleano y los datos del certificado. */
+function cleanDoc(x,k){
+  if(!x||typeof x!=='object'||Array.isArray(x))return undefined;
+  const o={on:x.on===true};DOC_FIELDS(k).forEach(f=>{if(typeof x[f]==='string'&&x[f])o[f]=x[f].slice(0,1000)});
+  const c=x.cert;if(c&&typeof c==='object'&&(c.type==='image/jpeg'||c.type==='application/pdf'))o.cert={name:typeof c.name==='string'?c.name.slice(0,120):'',type:c.type,size:+c.size||0,at:+c.at||0};
+  return o;
+}
+const docOf=(p,k)=>(p&&p[DOCS[k].key])||null;
+const docHasData=d=>!!d&&(DOC_FIELDS('ped').concat(DOC_FIELDS('chip')).some(f=>d[f])||!!d.cert);
+const ownerGuess=(p,k)=>{const o=docOf(p,k==='ped'?'chip':'ped');return (o&&o.owner)||(fb.user?myName():'')};
+let draftDoc={},draftBase=null;
+function docFields(k,p){
+  const D=DOCS[k],d=docOf(p,k)||{},on=!!d.on;draftDoc[k]=on;
+  const field=([f,,ty])=>{const id=`${D.pre}-${f}`,v=d[f]!=null?d[f]:(f==='owner'?ownerGuess(p,k):''),mx=DOC_MAX(f,ty),req=D.req.includes(f);
+    const lb=`<span>${t(id.replace('-','_'))}${req?'':` <small class="opt">${t('optional')}</small>`}</span>`;
+    const ctl=ty==='area'?`<textarea id="${id}" maxlength="${mx}">${esc(v)}</textarea>`:`<input id="${id}" type="${ty==='date'?'date':ty==='tel'?'tel':'text'}" maxlength="${mx}"${ty==='date'?` max="${todayStr()}"`:''}${ty==='chip'?' inputmode="numeric" autocomplete="off" spellcheck="false"':''}${ty==='tel'?' autocomplete="tel"':''} value="${esc(v)}">`;
+    return `<label class="f${ty==='area'||ty==='chip'?' full':''}" id="${id}-w">${lb}${ctl}<span class="ferr" id="${id}-e" hidden></span></label>`};
+  return `<div class="f full docq">${`<span class="label" style="text-transform:none;letter-spacing:0;font-size:13px">${t(k+'_q')}</span>`}<div class="seg" id="seg-${k}" style="grid-template-columns:1fr 1fr"><button type="button" data-act="doc-yn" data-k="${k}" data-v="1" aria-pressed="${on}">${t('doc_yes')}</button><button type="button" data-act="doc-yn" data-k="${k}" data-v="0" aria-pressed="${!on}">${t('doc_no')}</button></div></div>
+  <div class="full" id="dc-${k}" hidden></div>
+  <div class="full docform" id="df-${k}" ${on?'':'hidden'}><p class="docauto">${t('doc_auto_'+k)}</p>${D.sec.map(([h,fs])=>`<fieldset class="docsec"><legend>${t(h)}</legend><div class="fields">${fs.map(field).join('')}</div></fieldset>`).join('')}</div>`;
+}
+/* Lee y valida el formulario. Con "No" se guarda lo escrito sin exigir nada, para poder recuperarlo. */
+function readDocForm(k){
+  const D=DOCS[k],o={on:!!draftDoc[k]},bad=[];
+  D.sec.forEach(([,fs])=>fs.forEach(([f,,ty])=>{const el=$(`#${D.pre}-${f}`);if(!el)return;let v=el.value.trim().slice(0,DOC_MAX(f,ty));
+    if(ty==='chip')v=v.replace(/[\s.-]/g,'').toUpperCase();let err='';
+    if(o.on){if(!v&&D.req.includes(f))err=t('e_req');else if(v&&ty==='chip'&&!CHIP_RE.test(v))err=t('e_chip');else if(v&&ty==='tel'&&!TEL_RE.test(v))err=t('e_tel');else if(v&&ty==='date'&&(!DAY_RE.test(v)||v>todayStr()))err=t('e_date')}
+    const e=$(`#${D.pre}-${f}-e`);if(e){e.textContent=err;e.hidden=!err}const w=$(`#${D.pre}-${f}-w`);if(w)w.classList.toggle('bad',!!err);
+    if(err)bad.push(el);if(v)o[f]=v}));
+  return {doc:o,bad};
+}
+function docSummary(p){
+  const card=k=>{const d=docOf(p,k);if(!d||!d.on)return'';const row=(l,v)=>v?`<dt>${l}</dt><dd>${esc(v)}</dd>`:'';
+    const head=k==='chip'?`<span class="label">${t('chip_t')}</span><b class="chipno">${esc((d.number||'').replace(/(.{3})(?=.)/g,'$1 '))}</b>`:`<span class="label">${t('ped_t')}</span><b class="docname">${esc(d.regName||p.name)}</b>`;
+    const rows=k==='chip'?row(t('mc_implant'),fmtDate(d.implant||''))+row(t('mc_vet'),d.vet)+row(t('mc_clinic'),d.clinic)+row(t('mc_color'),d.color):row(t('pd_regNo'),d.regNo)+row(t('pd_assoc'),d.assoc)+row(t('pd_kennel'),d.kennel)+row(t('pd_sire'),d.sire)+row(t('pd_dam'),d.dam);
+    const c=d.cert,cert=CERT_FILES?`<div class="certrow"><span class="label">${t('cert_h')}</span>${c?`<span class="certn">${esc(c.name||t('cert_h'))}</span><div class="acts"><button type="button" class="btn sm soft" data-act="cert-view" data-k="${k}">${t('cert_view')}</button><button type="button" class="btn sm soft" data-act="cert-ask" data-k="${k}" data-op="rep">${t('cert_rep')}</button><button type="button" class="btn sm ghost" data-act="cert-ask" data-k="${k}" data-op="rm">${t('cert_rm')}</button></div>`:`<div class="acts"><button type="button" class="btn sm soft" data-act="cert-add" data-k="${k}">${t('cert_add')}</button></div>`}<div id="cq-${k}"></div></div>`:'';
+    return `<article class="doccard" id="doc-${k}"><div class="doc-h">${head}</div>${rows?`<dl>${rows}</dl>`:''}<div class="acts"><button type="button" class="btn sm soft" data-act="doc-edit" data-k="${k}" data-pet="${esc(p.id)}">${t('doc_edit')}</button><button type="button" class="btn sm soft" data-act="doc-pdf" data-k="${k}" data-pet="${esc(p.id)}">${I.filedown}${t('doc_pdf')}</button></div>${cert}</article>`};
+  const h=card('chip')+card('ped');return h?`<section class="sec"><div class="sec-h"><h2>${t('docs_h')}</h2></div><div class="docs">${h}</div></section>`:'';
+}
+/* Guarda solo el apartado indicado: update del campo pedigree o microchip, sin reescribir la mascota. */
+function saveDoc(p,k,doc){const D=DOCS[k].key,cur=state.pets[p.id]||p;savePet(Object.assign({},cur,{[D]:doc}),cur)}
+const fileSlug=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'mascota';
+function logoData(){return fetch('icon-192.png').then(r=>r.ok?r.blob():null).then(b=>b&&new Promise(ok=>{const f=new FileReader();f.onload=()=>ok(f.result);f.onerror=()=>ok(null);f.readAsDataURL(b)})).catch(()=>null)}
+async function docPdf(p,k){toast('PDF…');try{await loadJsPdf();const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'letter'}),W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),M=16,d=docOf(p,k)||{};
+  const INK=[61,35,24],MUT=[107,85,70],BLUE=[31,79,255],CW=W-2*M,LX=M,VX=M+58,VW=W-VX-M;
+  doc.setFillColor(...BLUE);doc.rect(0,0,W,40,'F');const logo=await logoData();let tx=M;if(logo){doc.addImage(logo,'PNG',M,9,22,22);tx=M+28}
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(20);doc.text('PETFILE',tx,18);doc.setFontSize(13);doc.text(t(k+'_pdf_t'),tx,26);doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(234,224,205);doc.text(doc.splitTextToSize(p.name||'',W-tx-M)[0]||'',tx,33);
+  const pet=[[t('pf_name'),p.name],[t('pf_species'),spOf(p)],[t('f_breed'),p.breed],[t('f_sex'),sxL(p.sex)],[t('pf_weight'),p.weight?p.weight+' kg':''],[t('pf_birth'),fmtDate(p.birth||'')]];
+  const f=x=>d[x]||'',sections=k==='ped'?[[t('ped_s1'),[[t('pd_regName'),f('regName')],[t('ped_name'),p.name],[t('f_breed'),p.breed],[t('f_sex'),sxL(p.sex)],[t('pf_birth'),fmtDate(p.birth||'')],[t('pd_regNo'),f('regNo')],[t('pd_tattoo'),f('tattoo')],[t('pd_kennel'),f('kennel')],[t('pd_assoc'),f('assoc')]]],[t('ped_s2'),[[t('pd_sire'),f('sire')],[t('pd_sireNo'),f('sireNo')],[t('pd_dam'),f('dam')],[t('pd_damNo'),f('damNo')]]],[t('ped_s3'),[[t('pd_owner'),f('owner')],[t('pd_address'),f('address')],[t('pd_phone'),f('phone')],[t('pd_transfer'),fmtDate(f('transfer'))],[t('pd_notes'),f('notes')]]]]
+    :[[t('chip_s1'),[[t('mc_number'),f('number')]].concat(pet.slice(0,5),[[t('mc_color'),f('color')],[t('mc_marks'),f('marks')],pet[5]])],[t('chip_s2'),[[t('mc_implant'),fmtDate(f('implant'))],[t('mc_vet'),f('vet')],[t('mc_clinic'),f('clinic')],[t('mc_vetPhone'),f('vetPhone')],[t('mc_notes'),f('notes')]]],[t('chip_s3'),[[t('mc_owner'),f('owner')],[t('mc_ownerPhone'),f('ownerPhone')],[t('mc_ownerAddress'),f('ownerAddress')]]]];
+  let y=52;const room=h=>{if(y+h>H-22){doc.addPage();y=20}};
+  sections.forEach(([title,rows])=>{rows=rows.filter(r=>r[1]);if(!rows.length)return;room(16);doc.setFont('helvetica','bold');doc.setFontSize(11.5);doc.setTextColor(...BLUE);doc.text(title,M,y);y+=2.5;doc.setDrawColor(217,204,181);doc.setLineWidth(.3);doc.line(M,y,W-M,y);y+=6;
+    rows.forEach(([l,v])=>{doc.setFont('helvetica','normal');doc.setFontSize(10.5);const ls=doc.splitTextToSize(String(v),VW),h=ls.length*5+2;room(h);doc.setFontSize(9.5);doc.setTextColor(...MUT);doc.text(doc.splitTextToSize(l,VX-LX-4),LX,y);doc.setFontSize(k==='chip'&&l===t('mc_number')?13:10.5);doc.setFont('helvetica',k==='chip'&&l===t('mc_number')?'bold':'normal');doc.setTextColor(...INK);doc.text(ls,VX,y);y+=h});y+=5});
+  doc.setFont('helvetica','bold');doc.setFontSize(9.5);const disc=doc.splitTextToSize(t(k+'_disc'),CW-10),dh=disc.length*4.6+8;room(dh+4);doc.setFillColor(243,236,224);doc.setDrawColor(217,204,181);doc.roundedRect(M,y,CW,dh,2.5,2.5,'FD');doc.setTextColor(...INK);doc.text(disc,M+5,y+6.5);
+  const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(...MUT);doc.text('PETFILE  |  '+t('exp_gen')+' '+fmtDate(todayStr()),M,H-9);doc.text(t('exp_page')+' '+i+'/'+pages,W-M,H-9,{align:'right'})}
+  await state.caps.downloads.save({filename:(k==='ped'?t('ped_file'):'microchip')+'-'+fileSlug(p.name)+'.pdf',data:doc.output('blob')});toast(t('exp_ok'))}catch(e){console.warn(e);toast(t('exp_err'))}}
+/* ---------- Certificados adjuntos: documento aparte families/{familia}/certs/{mascota}_{ped|chip}, nunca dentro de la mascota ---------- */
+const CERT_B64=930000,CERT_PDF_MAX=680*1024;
+const certRef=(petId,k)=>famRef(fb.famId).collection('certs').doc(petId+'_'+k);
+function b64(buf){const u=new Uint8Array(buf);let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)}
+function dataBlob(d){const [h,b]=d.split(',');const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return new Blob([u],{type:h.slice(5).split(';')[0]})}
+async function certFile(f){
+  const isPdf=f.type==='application/pdf'||/\.pdf$/i.test(f.name||'');
+  if(isPdf){if(f.size>CERT_PDF_MAX)throw new Error('cert_big');const buf=await f.arrayBuffer();if(String.fromCharCode(...new Uint8Array(buf.slice(0,5)))!=='%PDF-')throw new Error('cert_bad');return {type:'application/pdf',data:'data:application/pdf;base64,'+b64(buf)}}
+  if(!/^image\//.test(f.type||''))throw new Error('cert_bad');
+  for(const mx of [1800,1400,1000]){const d=await resizeImage(f,mx,false);if(d.length<=CERT_B64)return {type:'image/jpeg',data:d}}
+  throw new Error('cert_big');
+}
+async function certSave(p,k,f){
+  if(!fb.petsCol||!fb.famId){toast(t('cert_cloud'));return}
+  let x;try{x=await certFile(f)}catch(e){toast(t(/^cert_/.test(e.message)?e.message:'cert_bad'));return}
+  const name=String(f.name||'certificado').replace(/[^\w .()-]/g,'').slice(0,120)||'certificado',meta={name,type:x.type,size:Math.round(x.data.length*.75),at:Date.now()};
+  toast(t('cert_up'));try{await certRef(p.id,k).set({petId:p.id,kind:k,name,type:x.type,data:x.data,size:meta.size,at:meta.at})}catch(e){cloudErr(e);return}
+  const cur=state.pets[p.id];if(cur)saveDoc(cur,k,Object.assign({},docOf(cur,k)||{on:true},{cert:meta}));toast(t('cert_ok'));
+}
+function certPick(p,k){const inp=document.createElement('input');inp.type='file';inp.accept='image/*,application/pdf';inp.onchange=()=>{if(inp.files[0])certSave(p,k,inp.files[0])};inp.click()}
+async function certView(p,k){
+  try{const s=await certRef(p.id,k).get(),x=s.exists?s.data():null;if(!x||typeof x.data!=='string'){toast(t('cert_missing'));return}
+    const fn=(x.type==='application/pdf'?'.pdf':'.jpg'),name=(k==='ped'?t('ped_file'):'microchip')+'-'+fileSlug(p.name)+'-'+t('cert_file')+fn;
+    if(x.type==='image/jpeg'&&safeImg(x.data)){state.certDl={name,data:x.data};$('#layer').innerHTML=`<div class="viewer" role="dialog" aria-modal="true"><div class="track"><div class="slide"><img src="${esc(safeImg(x.data))}" alt="${esc(t('cert_h'))}"></div></div><div class="vbar"><button class="btn" data-act="cert-dl">${t('cert_dl')}</button><button class="btn vclose" data-act="close">${t('close')}</button></div></div>`;return}
+    if(x.type==='application/pdf'&&/^data:application\/pdf;base64,[A-Za-z0-9+/]+=*$/.test(x.data)){await state.caps.downloads.save({filename:name,data:dataBlob(x.data)});return}
+    toast(t('cert_missing'));
+  }catch(e){cloudErr(e)}
+}
+async function certRemove(p,k){try{await certRef(p.id,k).delete()}catch(e){cloudErr(e);return}const cur=state.pets[p.id];if(cur){const d=Object.assign({},docOf(cur,k));delete d.cert;saveDoc(cur,k,d)}toast(t('cert_del'))}
+function docSet(k,v){draftDoc[k]=v;const f=$('#df-'+k);if(f)f.hidden=!v;const c=$('#dc-'+k);if(c){c.hidden=true;c.innerHTML=''}document.querySelectorAll('#seg-'+k+' button').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.v==='1')===v)))}
+Object.assign(S.es,{ped_q:'¿Tu mascota tiene pedigrí?',chip_q:'¿Tu mascota tiene microchip?',doc_yes:'Sí',doc_no:'No',optional:'(opcional)',
+  doc_auto_ped:'El nombre habitual, la raza, el sexo y la fecha de nacimiento se toman de los datos de arriba.',doc_auto_chip:'El nombre, la especie, la raza, el sexo, el peso y la fecha de nacimiento se toman de los datos de arriba.',
+  ped_s1:'Información del ejemplar',ped_s2:'Información de los padres',ped_s3:'Información del propietario',chip_s1:'Información de la mascota',chip_s2:'Información del implante',chip_s3:'Información del propietario',
+  pd_regName:'Nombre registrado del ejemplar',pd_regNo:'Número de registro del ejemplar',pd_tattoo:'Número de tatuaje',pd_kennel:'Criadero o procedencia',pd_assoc:'Asociación que emitió el pedigrí',pd_sire:'Nombre del padre',pd_sireNo:'Registro del padre',pd_dam:'Nombre de la madre',pd_damNo:'Registro de la madre',pd_owner:'Nombre completo del propietario',pd_address:'Dirección',pd_phone:'Teléfono',pd_transfer:'Fecha de traspaso',pd_notes:'Observaciones',
+  mc_number:'Número de microchip',mc_color:'Color',mc_marks:'Características particulares',mc_implant:'Fecha de implantación',mc_vet:'Médico veterinario',mc_clinic:'Clínica veterinaria',mc_vetPhone:'Teléfono de contacto',mc_notes:'Observaciones',mc_owner:'Nombre completo del propietario',mc_ownerPhone:'Teléfono',mc_ownerAddress:'Dirección',
+  ped_offQ:'Se ocultará el pedigrí. Los datos no se borran: los recuperás marcando Sí.',chip_offQ:'Se ocultará el microchip. Los datos no se borran: los recuperás marcando Sí.',doc_offYes:'Ocultar',
+  e_req:'Obligatorio',e_chip:'Usá de 9 a 15 dígitos (los microchips actuales tienen 15).',e_tel:'Teléfono no válido.',e_date:'Fecha no válida.',doc_err:'Revisá los datos marcados en pedigrí o microchip.',
+  docs_h:'Pedigrí y microchip',ped_t:'Pedigrí',chip_t:'Microchip',doc_edit:'Editar',doc_pdf:'Descargar PDF',ped_name:'Nombre habitual',ped_file:'pedigri',
+  ped_pdf_t:'Ficha de pedigrí',chip_pdf_t:'Ficha de microchip',
+  ped_disc:'Ficha informativa generada por PETFILE. No sustituye el certificado oficial de pedigrí emitido por la organización correspondiente.',
+  chip_disc:'Registro informativo generado por PETFILE. No sustituye el certificado emitido por el veterinario ni acredita por sí solo la inscripción en un registro oficial.',
+  cert_h:'Certificado original',cert_add:'Adjuntar certificado',cert_rep:'Reemplazar',cert_view:'Ver o descargar',cert_rm:'Eliminar',cert_dl:'Descargar',cert_file:'certificado',
+  cert_repQ:'Se reemplazará el certificado adjunto actual.',cert_rmQ:'¿Eliminar el certificado adjunto? No se puede deshacer.',cert_yes:'Sí, continuar',
+  cert_ok:'Certificado guardado',cert_del:'Certificado eliminado',cert_up:'Guardando certificado…',cert_big:'El archivo es muy grande. Usá una foto o un PDF de hasta 680 KB.',cert_bad:'Usá una foto o un archivo PDF.',cert_missing:'No se encontró el certificado.',cert_cloud:'Iniciá sesión para adjuntar certificados.'});
+Object.assign(S.en,{ped_q:'Does your pet have a pedigree?',chip_q:'Does your pet have a microchip?',doc_yes:'Yes',doc_no:'No',optional:'(optional)',
+  doc_auto_ped:'Usual name, breed, sex and date of birth come from the details above.',doc_auto_chip:'Name, species, breed, sex, weight and date of birth come from the details above.',
+  ped_s1:'Pet details',ped_s2:'Parents',ped_s3:'Owner',chip_s1:'Pet details',chip_s2:'Implant',chip_s3:'Owner',
+  pd_regName:'Registered name',pd_regNo:'Registration number',pd_tattoo:'Tattoo number',pd_kennel:'Kennel or breeder',pd_assoc:'Issuing association',pd_sire:"Sire's name",pd_sireNo:"Sire's registration",pd_dam:"Dam's name",pd_damNo:"Dam's registration",pd_owner:"Owner's full name",pd_address:'Address',pd_phone:'Phone',pd_transfer:'Transfer date',pd_notes:'Notes',
+  mc_number:'Microchip number',mc_color:'Color',mc_marks:'Distinctive features',mc_implant:'Implant date',mc_vet:'Veterinarian',mc_clinic:'Veterinary clinic',mc_vetPhone:'Contact phone',mc_notes:'Notes',mc_owner:"Owner's full name",mc_ownerPhone:'Phone',mc_ownerAddress:'Address',
+  ped_offQ:'The pedigree will be hidden. Nothing is deleted: select Yes to get it back.',chip_offQ:'The microchip will be hidden. Nothing is deleted: select Yes to get it back.',doc_offYes:'Hide',
+  e_req:'Required',e_chip:'Use 9 to 15 digits (current microchips have 15).',e_tel:'Invalid phone number.',e_date:'Invalid date.',doc_err:'Check the highlighted pedigree or microchip fields.',
+  docs_h:'Pedigree and microchip',ped_t:'Pedigree',chip_t:'Microchip',doc_edit:'Edit',doc_pdf:'Download PDF',ped_name:'Usual name',ped_file:'pedigree',
+  ped_pdf_t:'Pedigree record',chip_pdf_t:'Microchip record',
+  ped_disc:'Informational record generated by PETFILE. It does not replace the official pedigree certificate issued by the corresponding organization.',
+  chip_disc:'Informational record generated by PETFILE. It does not replace the certificate issued by the veterinarian, nor does it by itself prove registration in an official registry.',
+  cert_h:'Original certificate',cert_add:'Attach certificate',cert_rep:'Replace',cert_view:'View or download',cert_rm:'Delete',cert_dl:'Download',cert_file:'certificate',
+  cert_repQ:'The current attached certificate will be replaced.',cert_rmQ:'Delete the attached certificate? This cannot be undone.',cert_yes:'Yes, continue',
+  cert_ok:'Certificate saved',cert_del:'Certificate deleted',cert_up:'Saving certificate…',cert_big:'The file is too large. Use a photo or a PDF up to 680 KB.',cert_bad:'Use a photo or a PDF file.',cert_missing:'Certificate not found.',cert_cloud:'Sign in to attach certificates.'});
 let draftPhoto=null,draftSex='',draftSpecies='Perro';
-function petForm(p){
-  p=p||{};draftPhoto=p.photo||null;draftSex=normSex(p.sex);draftSpecies=p.species||'Perro';const isNew=!p.id;
+function petForm(p,focus){
+  p=p||{};draftBase=p;draftPhoto=p.photo||null;draftSex=normSex(p.sex);draftSpecies=p.species||'Perro';const isNew=!p.id;
   const ph=()=>safeImg(draftPhoto)?`<img class="ph" src="${esc(safeImg(draftPhoto))}" alt="">`:`<div class="ph"><span class="mark"></span></div>`;
   const lab=x=>`<span class="label" style="text-transform:none;letter-spacing:0;font-size:13px">${x}</span>`;
   openSheet(`<h2>${isNew?t('pf_new'):esc(t('pf_edit',p.name))}</h2><form id="petform" class="fields" novalidate>
@@ -1187,13 +1315,18 @@ function petForm(p){
   <label class="f">${t('f_breed')}<input id="pf-breed" value="${esc(p.breed||'')}" placeholder="${t('pf_breedPh')}"></label>
   <label class="f">${t('pf_weight')}<input id="pf-weight" inputmode="decimal" value="${esc(p.weight||'')}" placeholder="${t('pf_weightPh')}"></label>
   <label class="f full">${t('pf_birth')}<input id="pf-birth" type="date" max="${todayStr()}" value="${esc(p.birth||'')}"></label>
+  ${docFields('ped',p)}${docFields('chip',p)}
+  <div id="pf-doc-err" class="full err" hidden>${t('doc_err')}</div>
   <div id="pf-prem" class="full" hidden></div>
   <div id="pf-err" class="full err" hidden>${t('pf_err')}</div>
   <button class="btn dark block full" type="submit">${isNew?t('pf_add'):t('pf_save')}</button>
   ${isNew?'':`<div class="full" id="delpet">${delPetBtn(p)}</div>`}</form>`);
   $('#petphoto').addEventListener('change',async ev=>{const f=ev.target.files[0];if(!f)return;try{draftPhoto=await resizeImage(f,560,true);$('#pp').innerHTML=ph();$('#rmph').hidden=false}catch(e){toast(t('t_imgErr'))}});
+  if(focus&&$('#df-'+focus))$('#df-'+focus).scrollIntoView({block:'start'});
   $('#petform').addEventListener('submit',ev=>{ev.preventDefault();const name=$('#pf-name').value.trim();if(!name){$('#pf-err').hidden=false;$('#pf-name').focus();return}
-    const pet=Object.assign({},p,{id:p.id||uid('m'),name,species:draftSpecies,speciesOther:draftSpecies==='Otro'?$('#pf-other').value.trim():'',sex:draftSex,breed:$('#pf-breed').value.trim(),weight:$('#pf-weight').value.trim().replace(',','.'),birth:$('#pf-birth').value,photo:draftPhoto||null,entries:p.entries||[],createdAt:p.createdAt||Date.now()});
+    const docs={};let bad=[];['ped','chip'].forEach(k=>{const r=readDocForm(k),prev=docOf(p,k);bad=bad.concat(r.bad);if(r.doc.on||prev)docs[DOCS[k].key]=Object.assign(r.doc,prev&&prev.cert?{cert:prev.cert}:{})});
+    $('#pf-doc-err').hidden=!bad.length;if(bad.length){bad[0].focus();return}
+    const pet=Object.assign({},p,{id:p.id||uid('m'),name,species:draftSpecies,speciesOther:draftSpecies==='Otro'?$('#pf-other').value.trim():'',sex:draftSex,breed:$('#pf-breed').value.trim(),weight:$('#pf-weight').value.trim().replace(',','.'),birth:$('#pf-birth').value,photo:draftPhoto||null,entries:p.entries||[],createdAt:p.createdAt||Date.now()},docs);
     closeSheet();savePet(pet,isNew?null:p);if(isNew)go('pet',pet.id);toast(isNew?t('t_petAdded'):t('t_saved'))});
 }
 const delPetBtn=p=>`<button type="button" class="btn ghost block" style="color:var(--warn)" data-act="ask-del-pet" data-pet="${esc(p.id)}">${t('pf_del')}</button>`;
@@ -1306,6 +1439,18 @@ document.addEventListener('click',ev=>{
     case'filter':state.filter=el.dataset.f;state.confirmEntry=null;render();break;
     case'done':{const x=(p.entries||[]).find(y=>y.id===el.dataset.e);if(x)saveEntry(p.id,x,Object.assign({},x,{done:true}))}toast(t('t_done'));break;
     case'save-rx':saveRx(p);break;
+    case'doc-yn':{const k=el.dataset.k,v=el.dataset.v==='1';if(!v&&draftDoc[k]&&docHasData(docOf(draftBase,k))){const c=$('#dc-'+k);c.innerHTML=`<div class="confirm"><b>${t(k+'_offQ')}</b><div style="display:flex;gap:8px"><button type="button" class="btn sm" data-act="doc-off" data-k="${k}">${t('doc_offYes')}</button><button type="button" class="btn sm ghost" data-act="doc-off-no" data-k="${k}">${t('cancel')}</button></div></div>`;c.hidden=false;break}docSet(k,v);break}
+    case'doc-off':docSet(el.dataset.k,false);break;
+    case'doc-off-no':{const c=$('#dc-'+el.dataset.k);c.hidden=true;c.innerHTML='';break}
+    case'doc-edit':if(p)petForm(p,el.dataset.k);break;
+    case'doc-pdf':if(p)docPdf(p,el.dataset.k);break;
+    case'cert-add':if(CERT_FILES&&p)certPick(p,el.dataset.k);break;
+    case'cert-view':if(CERT_FILES&&p)certView(p,el.dataset.k);break;
+    case'cert-ask':{const k=el.dataset.k,op=el.dataset.op==='rm'?'rm':'rep';$('#cq-'+k).innerHTML=`<div class="confirm"><b>${t('cert_'+op+'Q')}</b><div style="display:flex;gap:8px"><button type="button" class="btn sm${op==='rm'?' danger':''}" data-act="cert-${op}" data-k="${k}">${t('cert_yes')}</button><button type="button" class="btn sm ghost" data-act="cert-no" data-k="${k}">${t('cancel')}</button></div></div>`;break}
+    case'cert-no':$('#cq-'+el.dataset.k).innerHTML='';break;
+    case'cert-rep':$('#cq-'+el.dataset.k).innerHTML='';if(CERT_FILES&&p)certPick(p,el.dataset.k);break;
+    case'cert-rm':$('#cq-'+el.dataset.k).innerHTML='';if(CERT_FILES&&p)certRemove(p,el.dataset.k);break;
+    case'cert-dl':if(state.certDl)state.caps.downloads.save({filename:state.certDl.name,data:dataBlob(state.certDl.data)});break;
   }
 });
 document.addEventListener('change',ev=>{if(ev.target.id==='rxfile'){const f=ev.target.files[0];const p=state.pets[state.view.id];if(f&&p)readRx(p,f);ev.target.value=''}});

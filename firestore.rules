@@ -42,7 +42,21 @@ service cloud.firestore {
         && optStr(d, 'birth', 40)
         && (!('weight' in d) || d.weight == null || d.weight is number || str(d.weight, 40))
         && (!('photo' in d) || d.photo == null || imageOk(d.photo, 900000))
-        && (!('entries' in d) || (d.entries is list && d.entries.size() <= 2000));
+        && (!('entries' in d) || (d.entries is list && d.entries.size() <= 2000))
+        && docMapOk(d, 'pedigree') && docMapOk(d, 'microchip');
+    }
+    // Pedigrí y microchip: un mapa corto dentro de la mascota (textos, on y datos del certificado).
+    function docMapOk(d, k) {
+      return !(k in d) || d[k] == null || (d[k] is map && d[k].size() <= 24);
+    }
+    // Certificado adjunto: documento aparte, uno por mascota y tipo. Imagen JPEG o PDF de hasta ~700 KB.
+    function certOk(cid, d) {
+      return d.keys().hasOnly(['petId', 'kind', 'name', 'type', 'data', 'size', 'at'])
+        && idOk(d.get('petId', '')) && d.get('kind', '') in ['ped', 'chip'] && cid == d.petId + '_' + d.kind
+        && str(d.get('name', ''), 120) && d.get('size', '') is int && d.get('at', '') is int
+        && d.get('data', 0) is string && d.data.size() <= 940000
+        && ((d.get('type', '') == 'image/jpeg' && d.data.matches('^data:image/jpeg;base64,[A-Za-z0-9+/=]+$'))
+          || (d.get('type', '') == 'application/pdf' && d.data.matches('^data:application/pdf;base64,[A-Za-z0-9+/=]+$')));
     }
     // Receta: misma forma que guarda la app. Las recetas existentes se siguen pudiendo leer y eliminar.
     function recetaOk(rid, d) {
@@ -168,6 +182,10 @@ service cloud.firestore {
       match /recetasImg/{rid} {
         allow read, delete: if canUse(fid);
         allow create, update: if canUse(fid) && recetaImgOk(rid, request.resource.data);
+      }
+      match /certs/{cid} {
+        allow read, delete: if canUse(fid);
+        allow create, update: if canUse(fid) && certOk(cid, request.resource.data);
       }
     }
   }

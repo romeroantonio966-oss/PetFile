@@ -498,3 +498,29 @@ label.f[hidden]{display:none}
 .mini{flex-wrap:wrap;justify-content:flex-end;gap:4px 10px}
 .mini .pbadge{margin-left:3px}
 .famcard .favs .fav{color:#fff}
+
+/* pedigrí y microchip */
+.docform{display:flex;flex-direction:column;gap:12px}
+.docauto{margin:0;font-size:13px;color:var(--muted)}
+.docsec{border:1px solid var(--line);border-radius:16px;padding:12px;margin:0;min-width:0}
+.docsec legend{font-weight:800;font-size:14px;color:var(--ink);padding:0 6px}
+.opt{font-weight:500;color:var(--muted)}
+.ferr{color:var(--warn);font-size:12px;font-weight:700}
+.f.bad input,.f.bad textarea{border-color:var(--warn)}
+.docs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.doccard{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.doc-h{display:flex;flex-direction:column;gap:2px;min-width:0}
+.chipno{font-family:var(--f-display);font-size:22px;letter-spacing:.03em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.docname{font-family:var(--f-display);font-size:18px;overflow-wrap:anywhere}
+.doccard dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:0;font-size:13px}
+.doccard dt{color:var(--muted)}
+.doccard dd{margin:0;font-weight:600;overflow-wrap:anywhere;min-width:0}
+.doccard .acts{display:flex;flex-wrap:wrap;gap:6px}
+.doccard .acts svg{width:16px;height:16px}
+.certrow{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px}
+.certn{font-size:13px;font-weight:600;overflow-wrap:anywhere}
+.viewer .vbar{display:flex;gap:8px;justify-content:center;padding:12px}
+.viewer .vbar .vclose{margin:0}
+.viewer .vbar .btn{background:var(--bg);color:var(--ink)}
+.docsec .fields{align-items:end}
+.docsec label.f{justify-content:flex-end}

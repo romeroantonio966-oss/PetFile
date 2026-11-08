@@ -42,7 +42,9 @@ const JSPDF = '4.2.1';
 if (version('jspdf') !== JSPDF) fail(`jspdf instalado ${version('jspdf')}, se esperaba ${JSPDF}`);
 cpSync(join(MOD, 'jspdf/dist/jspdf.umd.min.js'), join(VENDOR, 'jspdf.umd.min.js'));
 let appJs = readFileSync(join(OUT, 'app.js'), 'utf8');
-appJs = swap(appJs, `https://cdnjs.cloudflare.com/ajax/libs/jspdf/${JSPDF}/jspdf.umd.min.js`, 'vendor/jspdf.umd.min.js');
+// La web y la app usan la misma copia local (public/vendor): debe coincidir con la versión instalada.
+if (!appJs.includes("s.src='vendor/jspdf.umd.min.js'")) fail('app.js no carga jsPDF desde vendor/');
+if (!readFileSync(join('public', 'vendor', 'jspdf.umd.min.js')).equals(readFileSync(join(MOD, 'jspdf/dist/jspdf.umd.min.js')))) fail('public/vendor/jspdf.umd.min.js no coincide con jspdf instalado');
 
 // Fuentes: las mismas familias y nombres que declara el CSS de la app
 const FONTS = [
