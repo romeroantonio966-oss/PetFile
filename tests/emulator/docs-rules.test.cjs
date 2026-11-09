@@ -32,6 +32,6 @@ test('Certificados: rechaza tipos, contenido, ids y tamaños incorrectos', async
     ['q_ped', cert()], ['p_chip', cert()], ['x"><b>_ped', cert({ petId: 'x"><b>' })], ['p_ped', cert({ extra: 1 })], ['p_ped', cert({ size: 'x' })], ['p_ped', cert({ name: 'n'.repeat(121) })], ['p_ped', cert({ data: JPG + 'A'.repeat(940000) })]]) await assertFails(setDoc(doc(o, CERT(id)), d));
 });
 test('Certificados: un integrante de familia sin Premium vigente no accede', async () => {
-  await env.withSecurityRulesDisabled(async (c) => { await setDoc(doc(c.firestore(), CERT()), cert()); await updateDoc(doc(c.firestore(), 'families/f'), { paidUntil: Timestamp.fromMillis(1) }); });
+  await env.withSecurityRulesDisabled(async (c) => { const d = c.firestore(); await setDoc(doc(d, CERT()), cert()); await updateDoc(doc(d, 'families/f'), { paidUntil: Timestamp.fromMillis(1) }); }); // un solo firestore() por contexto: volver a pedirlo reconfigura el emulador y falla
   await assertFails(getDoc(doc(db('m'), CERT()))); await assertSucceeds(getDoc(doc(db('o'), CERT())), 'el administrador sigue usando su familia');
 });

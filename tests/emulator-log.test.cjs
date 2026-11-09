@@ -63,3 +63,10 @@ test('Respaldo de reglas publicadas intacto', () => {
   assert.strictEqual(crypto.createHash('sha256').update(fs.readFileSync(path.join(dir, 'firestore.published-2026-11-06.rules'), 'utf8').replace(/\r\n/g, '\n')).digest('hex'), want); // Windows puede descargarlo con CRLF
   assert.ok(fs.readdirSync(path.join(__dirname, 'emulator')).includes('compat-main.test.cjs'));
 });
+
+// Regresión: pedir firestore() dos veces al mismo contexto (por ejemplo, dentro de withSecurityRulesDisabled) falla con failed-precondition.
+test('Ninguna prueba del emulador pide firestore() dos veces en la misma línea', () => {
+  const twice = (src) => src.split('\n').some((l) => (l.match(/\bc\.firestore\(\)/g) || []).length > 1);
+  assert.strictEqual(twice("env.withSecurityRulesDisabled(async (c) => { await setDoc(doc(c.firestore(), A), x); await updateDoc(doc(c.firestore(), B), y); });"), true, 'el control detecta el patrón');
+  for (const f of fs.readdirSync(path.join(__dirname, 'emulator')).filter((x) => x.endsWith('.cjs')).map((x) => 'emulator/' + x).concat('load/emulator-load.cjs')) assert.strictEqual(twice(fs.readFileSync(path.join(__dirname, f), 'utf8')), false, f);
+});
