@@ -527,3 +527,11 @@ label.f[hidden]{display:none}
 .viewer .vbar .btn{background:var(--bg);color:var(--ink)}
 .docsec .fields{align-items:end}
 .docsec label.f{justify-content:flex-end}
+
+/* espacio por mascota */
+.space{display:flex;flex-direction:column;gap:4px}
+.space-bar{height:8px;border-radius:999px;background:var(--line);overflow:hidden}
+.space-bar span{display:block;height:100%;background:var(--t-vacuna,#2E7D5B);border-radius:999px}
+.space.warn .space-bar span{background:var(--warn)}
+.space-t{font-size:12.5px;color:var(--muted);font-weight:600}
+.space-w{font-size:12.5px;color:var(--warn);font-weight:700}
