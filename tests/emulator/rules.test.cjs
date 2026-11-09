@@ -4,6 +4,7 @@ const log = require('../lib/emulator-log.cjs').install(); // Los rechazos de reg
 const { test, before, after, beforeEach } = require('node:test'); const assert = require('node:assert'); const fs = require('fs'), path = require('path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
 const { doc, setDoc, updateDoc, getDoc, deleteDoc, arrayUnion, arrayRemove, deleteField, serverTimestamp, Timestamp, writeBatch } = require('firebase/firestore');
+const W = () => ({ wAt: require('firebase/firestore').serverTimestamp() }); // marca que exigen las reglas en toda escritura de mascota
 const { ref, uploadBytes } = require('firebase/storage');
 const ROOT = path.join(__dirname, '..', '..'); let env;
 const FUT = Timestamp.fromMillis(Date.now() + 864e7), PAST = Timestamp.fromMillis(Date.now() - 864e5);
@@ -50,8 +51,19 @@ test('Premium: reescribir el mismo valor no otorga nada', async () => { await as
 test('Premium familiar: un integrante usa los beneficios y al vencer pierde acceso', async () => { await assertSucceeds(getDoc(doc(db('m'), 'families/f/pets/p'))); await seed((d) => updateDoc(doc(d, 'families/f'), { paidUntil: PAST })); await assertFails(getDoc(doc(db('m'), 'families/f/pets/p'))); await assertSucceeds(getDoc(doc(db('o'), 'families/f/pets/p'))); });
 test('Premium familiar: hasta seis integrantes', async () => { await seed((d) => updateDoc(doc(d, 'families/f'), { members: ['o', 'm', 'a', 'b', 'c'] })); await assertSucceeds(updateDoc(doc(db('n'), 'families/f'), JOIN('n'))); await seed(async (d) => { assert.strictEqual((await getDoc(doc(d, 'families/f'))).data().members.length, 6); }); await assertFails(updateDoc(doc(db('q'), 'families/f'), JOIN('q'))); });
 test('Lectura: ajenos no ven familia ni mascotas', async () => { await assertFails(getDoc(doc(db('z'), 'families/f'))); await assertFails(getDoc(doc(db('z'), 'families/f/pets/p'))); await assertSucceeds(getDoc(doc(db('m'), 'families/f/pets/p'))); });
-test('Mascotas: datos legítimos pasan', async () => { await assertSucceeds(setDoc(doc(db('m'), 'families/f/pets/q1'), { id: 'q1', name: 'Tom', species: 'Perro', weight: '12.5', birth: '2020-01-01', photo: null, entries: [{ id: 'e', title: 'x', date: '2026-01-01' }], createdAt: 1 })); await assertSucceeds(setDoc(doc(db('m'), 'families/f/pets/q2'), { name: 'Tom', photo: 'data:image/jpeg;base64,AAAA' })); await assertSucceeds(deleteDoc(doc(db('m'), 'families/f/pets/p'))); });
-for (const [n, d, id] of [['foto activa', { name: 'x', photo: '"><img onerror=1>' }, 'a1'], ['foto svg', { name: 'x', photo: 'data:image/svg+xml;base64,AA' }, 'a2'], ['nombre no texto', { name: 5 }, 'a3'], ['sin nombre', { breed: 'x' }, 'a4'], ['entries no lista', { name: 'x', entries: 'no' }, 'a5'], ['id con comillas', { name: 'x' }, 'a"b']]) test('Mascotas: rechaza ' + n, async () => assertFails(setDoc(doc(db('m'), 'families/f/pets/' + id), d)));
+test('Mascotas: datos legítimos pasan', async () => { await assertSucceeds(setDoc(doc(db('m'), 'families/f/pets/q1'), { id: 'q1', name: 'Tom', species: 'Perro', weight: '12.5', birth: '2020-01-01', photo: null, entries: [{ id: 'e', title: 'x', date: '2026-01-01' }], createdAt: 1, ...W() })); await assertSucceeds(setDoc(doc(db('m'), 'families/f/pets/q2'), { name: 'Tom', photo: 'data:image/jpeg;base64,AAAA', ...W() })); await assertSucceeds(deleteDoc(doc(db('m'), 'families/f/pets/p'))); });
+// Versión vieja de la app: reescribía la mascota completa sin wAt. Las reglas la rechazan para que no borre registros.
+test('Mascotas: rechaza escrituras sin wAt o con un wAt viejo (versión vieja de la app)', async () => {
+  const r = doc(db('m'), 'families/f/pets/p');
+  await assertFails(setDoc(r, { id: 'p', name: 'C', entries: [] }));
+  await assertFails(updateDoc(r, { name: 'Otro' }));
+  await assertSucceeds(updateDoc(r, { name: 'Otro', ...W() }));
+  const cur = (await getDoc(r)).data(); assert.ok(cur.wAt);
+  await assertFails(setDoc(r, { ...cur, entries: [] }));
+  await assertFails(setDoc(r, { ...cur, wAt: new Date() }));
+  await assertFails(setDoc(doc(db('m'), 'families/f/pets/nueva'), { name: 'Sin marca' }));
+});
+for (const [n, d, id] of [['foto activa', { name: 'x', photo: '"><img onerror=1>' }, 'a1'], ['foto svg', { name: 'x', photo: 'data:image/svg+xml;base64,AA' }, 'a2'], ['nombre no texto', { name: 5 }, 'a3'], ['sin nombre', { breed: 'x' }, 'a4'], ['entries no lista', { name: 'x', entries: 'no' }, 'a5'], ['id con comillas', { name: 'x' }, 'a"b']]) test('Mascotas: rechaza ' + n, async () => assertFails(setDoc(doc(db('m'), 'families/f/pets/' + id), { ...d, ...W() })));
 test('Unirse: código correcto con Premium', async () => assertSucceeds(updateDoc(doc(db('n'), 'families/f'), JOIN('n'))));
 test('Unirse: código malo', async () => assertFails(updateDoc(doc(db('n'), 'families/f'), JOIN('n', { joinCode: 'ZZZZZZ' }))));
 test('Unirse: no puede reescribir la ficha de otros', async () => assertFails(updateDoc(doc(db('n'), 'families/f'), JOIN('n', { 'memberInfo.o': { name: 'hack' } }))));

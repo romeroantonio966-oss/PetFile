@@ -20,6 +20,9 @@ for (const [label, file] of RULES) describe(`Web publicada con reglas ${label}`,
   let env, db; const S = (fn) => env.withSecurityRulesDisabled((c) => fn(c.firestore()));
   before(async () => { env = await initializeTestEnvironment({ projectId: 'demo-petfile', firestore: { rules: fs.readFileSync(path.join(ROOT, file), 'utf8') } }); db = clientPool(env); });
   after(async () => { await env.cleanup(); });
+  // Escritura de mascota tal como la envía main (sin wAt). Con las reglas nuevas se rechaza y la misma escritura con wAt pasa.
+  const W = () => ({ wAt: serverTimestamp() });
+  const oldW = async (mk) => { if (label === 'mobile-app') { await assertFails(mk({})); await assertSucceeds(mk(W())); } else await assertSucceeds(mk({})); };
   // Familia del administrador con Premium vigente, un integrante y una mascota con historial.
   beforeEach(async () => { await env.clearFirestore(); await S(async (d) => {
     await setDoc(doc(d, 'users/' + OWNER), { email: 'o@x.co', name: 'Ana', lang: 'es', trialStart: Timestamp.fromMillis(1), familyId: OWNER });
@@ -40,34 +43,34 @@ for (const [label, file] of RULES) describe(`Web publicada con reglas ${label}`,
     const d = db(OTHER), acct = (await getDoc(doc(d, 'users/' + OTHER))).data(), code = newCode(), b = writeBatch(d);
     b.set(doc(d, 'families/' + OTHER), { owner: OTHER, members: [OTHER], memberInfo: { [OTHER]: { name: 'Carla', email: 'c@x.co' } }, code, name: 'Carla', trialStart: acct.trialStart });
     b.set(doc(d, 'invites/' + code), { familyId: OTHER, ownerName: 'Carla' }); await assertSucceeds(b.commit());
-    for (const p of (await getDocs(collection(d, `users/${OTHER}/pets`))).docs) await assertSucceeds(setDoc(doc(d, PET(OTHER, p.id)), p.data()));
+    for (const p of (await getDocs(collection(d, `users/${OTHER}/pets`))).docs) await oldW((x) => setDoc(doc(d, PET(OTHER, p.id)), { ...p.data(), ...x }));
     await assertSucceeds(updateDoc(doc(d, 'users/' + OTHER), { familyId: OTHER }));
   });
   test('Mascota: crear con foto, editar y eliminar, como persist() de main', async () => {
-    const d = db(OWNER), id = uid('m'); await assertSucceeds(setDoc(doc(d, PET(OWNER, id)), petLikeMain(id, { photo: JPEG, birth: '2020-05-01', sex: 'Hembra' })));
-    const cur = (await getDoc(doc(d, PET(OWNER, id)))).data(); await assertSucceeds(setDoc(doc(d, PET(OWNER, id)), { ...cur, name: 'Canelita', weight: '13', photo: null }));
+    const d = db(OWNER), id = uid('m'); await oldW((x) => setDoc(doc(d, PET(OWNER, id)), petLikeMain(id, { photo: JPEG, birth: '2020-05-01', sex: 'Hembra', ...x })));
+    const cur = (await getDoc(doc(d, PET(OWNER, id)))).data(); await oldW((x) => setDoc(doc(d, PET(OWNER, id)), { ...cur, name: 'Canelita', weight: '13', photo: null, ...x }));
     await assertSucceeds(deleteDoc(doc(d, PET(OWNER, id))));
   });
   test('Administrador sin Premium sigue usando su propia familia', async () => {
     await S((d) => updateDoc(doc(d, 'families/' + OWNER), { paidUntil: Timestamp.fromMillis(1) })); const d = db(OWNER), id = uid('m');
-    await assertSucceeds(setDoc(doc(d, PET(OWNER, id)), petLikeMain(id))); await assertSucceeds(getDoc(doc(d, PET(OWNER, 'mexist1'))));
+    await oldW((x) => setDoc(doc(d, PET(OWNER, id)), petLikeMain(id, x))); await assertSucceeds(getDoc(doc(d, PET(OWNER, 'mexist1'))));
   });
   test('Receta y dieta en el historial: main reescribe la mascota completa', async () => {
     for (const u of [OWNER, MEMBER]) { const d = db(u), cur = (await getDoc(doc(d, PET(OWNER, 'mexist1')))).data();
-      await assertSucceeds(setDoc(doc(d, PET(OWNER, 'mexist1')), JSON.parse(JSON.stringify({ ...cur, entries: cur.entries.concat(receta('r' + u), dieta('d' + u)) })))); }
-    const cur = (await getDoc(doc(db(OWNER), PET(OWNER, 'mexist1')))).data(); await assertSucceeds(setDoc(doc(db(OWNER), PET(OWNER, 'mexist1')), { ...cur, entries: cur.entries.filter((e) => e.id !== 'r1') }));
+      await oldW((x) => setDoc(doc(d, PET(OWNER, 'mexist1')), { ...JSON.parse(JSON.stringify({ ...cur, entries: cur.entries.concat(receta('r' + u), dieta('d' + u)) })), ...x })); }
+    const cur = (await getDoc(doc(db(OWNER), PET(OWNER, 'mexist1')))).data(); await oldW((x) => setDoc(doc(db(OWNER), PET(OWNER, 'mexist1')), { ...cur, entries: cur.entries.filter((e) => e.id !== 'r1'), ...x }));
   });
   test('Receta y dieta con arrayUnion y arrayRemove, como guarda mobile-app', async () => {
-    const r = doc(db(MEMBER), PET(OWNER, 'mexist1')); await assertSucceeds(updateDoc(r, { entries: arrayUnion(receta('r2'), dieta('d2')) }));
-    const b = writeBatch(db(OWNER)), ro = doc(db(OWNER), PET(OWNER, 'mexist1')); b.update(ro, { entries: arrayRemove(dieta('d1')) }); b.update(ro, { entries: arrayUnion({ ...dieta('d1'), dose: '250 g' }) }); await assertSucceeds(b.commit());
-    await assertSucceeds(updateDoc(r, { entries: arrayRemove(receta('r1')) }));
+    const r = doc(db(MEMBER), PET(OWNER, 'mexist1')); await assertSucceeds(updateDoc(r, { ...W(), entries: arrayUnion(receta('r2'), dieta('d2')) }));
+    const b = writeBatch(db(OWNER)), ro = doc(db(OWNER), PET(OWNER, 'mexist1')); b.update(ro, { ...W(), entries: arrayRemove(dieta('d1')) }); b.update(ro, { ...W(), entries: arrayUnion({ ...dieta('d1'), dose: '250 g' }) }); await assertSucceeds(b.commit());
+    await assertSucceeds(updateDoc(r, { ...W(), entries: arrayRemove(receta('r1')) }));
     const es = (await readDoc(env, PET(OWNER, 'mexist1'))).data.entries; assert.deepStrictEqual(es.map((e) => e.id).sort(), ['d1', 'd2', 'r2']); assert.strictEqual(es.find((e) => e.id === 'd1').dose, '250 g');
   });
   test('Unirse con código: se suma, pasa sus mascotas y cambia su familyId', async () => {
     await S(async (d) => { await setDoc(doc(d, 'users/' + OTHER), { email: 'c@x.co', name: 'Carla', lang: 'es', trialStart: Timestamp.fromMillis(3), familyId: OTHER }); await setDoc(doc(d, 'families/' + OTHER), { owner: OTHER, members: [OTHER], memberInfo: { [OTHER]: { name: 'Carla', email: 'c@x.co' } }, code: 'ZZZ222', name: 'Carla', trialStart: Timestamp.fromMillis(3) }); await setDoc(doc(d, PET(OTHER, 'mcarla')), petLikeMain('mcarla', { entries: [dieta('dc')] })); });
     const d = db(OTHER); await assertSucceeds(getDoc(doc(d, 'invites/K7M2QX')));
     await assertSucceeds(updateDoc(doc(d, 'families/' + OWNER), { members: arrayUnion(OTHER), ['memberInfo.' + OTHER]: { name: 'Carla', email: 'c@x.co' }, joinCode: 'K7M2QX' }));
-    const p = (await getDoc(doc(d, PET(OTHER, 'mcarla')))).data(); await assertSucceeds(setDoc(doc(d, PET(OWNER, 'mcarla')), JSON.parse(JSON.stringify(p)))); await assertSucceeds(deleteDoc(doc(d, PET(OTHER, 'mcarla'))));
+    const p = (await getDoc(doc(d, PET(OTHER, 'mcarla')))).data(); await oldW((x) => setDoc(doc(d, PET(OWNER, 'mcarla')), { ...JSON.parse(JSON.stringify(p)), ...x })); await assertSucceeds(deleteDoc(doc(d, PET(OTHER, 'mcarla'))));
     await assertSucceeds(updateDoc(doc(d, 'users/' + OTHER), { familyId: OWNER }));
   });
   test('Salir de la familia y volver a la propia', async () => {
@@ -92,7 +95,13 @@ for (const [label, file] of RULES) describe(`Web publicada con reglas ${label}`,
   test('Usuarios existentes: leen su expediente y editan una mascota con datos antiguos', async () => {
     await S((d) => setDoc(doc(d, PET(OWNER, 'mviejo')), { id: 'mviejo', name: 'Toby', weight: 8, entries: [{ title: 'sin id', date: '2019-01-01' }, { id: 'v', type: 'vacuna', title: 'Rabia', date: '2020-01-01', next: '2021-01-01' }], createdAt: 5 }));
     for (const u of [OWNER, MEMBER]) { const d = db(u); await assertSucceeds(getDoc(doc(d, 'families/' + OWNER))); await assertSucceeds(getDocs(collection(d, `families/${OWNER}/pets`))); }
-    const d = db(MEMBER), cur = (await getDoc(doc(d, PET(OWNER, 'mviejo')))).data(); await assertSucceeds(setDoc(doc(d, PET(OWNER, 'mviejo')), { ...cur, entries: cur.entries.concat(receta('rn')) }));
+    const d = db(MEMBER), cur = (await getDoc(doc(d, PET(OWNER, 'mviejo')))).data(); await oldW((x) => setDoc(doc(d, PET(OWNER, 'mviejo')), { ...cur, entries: cur.entries.concat(receta('rn')), ...x }));
+  });
+  test('Teléfono con la versión vieja y el historial desactualizado no borra registros nuevos', async () => {
+    const stale = (await getDoc(doc(db(MEMBER), PET(OWNER, 'mexist1')))).data();
+    await assertSucceeds(updateDoc(doc(db(OWNER), PET(OWNER, 'mexist1')), { ...W(), entries: arrayUnion(receta('rnueva')) }));
+    const p = setDoc(doc(db(MEMBER), PET(OWNER, 'mexist1')), { ...stale, name: 'Canela editada' });
+    if (label === 'mobile-app') { await assertFails(p); assert.ok((await readDoc(env, PET(OWNER, 'mexist1'))).data.entries.some((e) => e.id === 'rnueva')); } else await assertSucceeds(p);
   });
   test('Un ajeno sigue sin acceso', async () => { const d = db(OTHER); await assertFails(getDoc(doc(d, PET(OWNER, 'mexist1')))); await assertFails(setDoc(doc(d, PET(OWNER, 'x1')), petLikeMain('x1'))); });
 
