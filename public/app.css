@@ -432,6 +432,9 @@ img.av{box-shadow:0 0 0 2px #fff,0 0 0 3.5px #1F4FFF}
  .pd-r .tt{font-weight:700;font-size:12pt}
  .pd-r .m{color:#6B5546;font-size:10pt}
  .pd-f{margin-top:12px;color:#6B5546;font-size:9pt}
+ .pd-r .sig{color:#6B5546;font-size:8.5pt;font-style:italic;margin-top:2px}
+ .pd-del{margin-top:14px}
+ .pd-del>b{font-size:11pt}
 }
 
 /* fechas y hojas: que nada se encime */
