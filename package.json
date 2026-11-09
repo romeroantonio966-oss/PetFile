@@ -27,7 +27,7 @@
     "mobile:build": "node scripts/build-mobile.mjs",
     "mobile:sync": "npm run mobile:build && cap sync",
     "mobile:android": "npm run mobile:sync && cap open android",
-    "test": "npm run mobile:build && node --test tests/functions.test.cjs tests/security-ui.test.cjs tests/injection.test.cjs tests/injection-ids.test.cjs tests/audit-recetas.test.cjs tests/audit-pets.test.cjs tests/pdf.test.cjs tests/docs.test.cjs tests/signatures.test.cjs tests/csp.test.cjs tests/concurrency.test.cjs tests/emulator-log.test.cjs",
+    "test": "npm run mobile:build && node --test tests/functions.test.cjs tests/security-ui.test.cjs tests/injection.test.cjs tests/injection-ids.test.cjs tests/audit-recetas.test.cjs tests/audit-pets.test.cjs tests/pdf.test.cjs tests/docs.test.cjs tests/signatures.test.cjs tests/space.test.cjs tests/csp.test.cjs tests/concurrency.test.cjs tests/emulator-log.test.cjs",
     "test:rules": "npx firebase-tools@13 emulators:exec --config firebase.emulator.json --project demo-petfile --only firestore,storage \"node tests/emulator/run.cjs\"",
     "test:concurrency": "npx firebase-tools@13 emulators:exec --config firebase.emulator.json --project demo-petfile --only firestore,storage \"node tests/emulator/run.cjs concurrency\"",
     "test:load": "npx firebase-tools@13 emulators:exec --config firebase.emulator.json --project demo-petfile --only firestore,storage \"node tests/load/emulator-load.cjs\"",
