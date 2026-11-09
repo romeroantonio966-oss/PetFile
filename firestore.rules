@@ -171,7 +171,10 @@ service cloud.firestore {
 
       match /pets/{petId} {
         allow read, delete: if canUse(fid);
-        allow create, update: if canUse(fid) && petOk(petId, request.resource.data);
+        // wAt: cada escritura trae la hora del servidor (serverTimestamp). Una versión vieja de la app no la envía y
+        // reescribía la mascota completa con su copia del historial, borrando registros de otros integrantes.
+        allow create, update: if canUse(fid) && petOk(petId, request.resource.data)
+          && request.resource.data.get('wAt', null) == request.time;
       }
 
       // Recetas: datos y miniatura en "recetas"; la foto completa aparte, en "recetasImg".

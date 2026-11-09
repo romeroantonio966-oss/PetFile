@@ -41,3 +41,9 @@ Los certificados se guardan en `families/{familia}/certs/{mascota}_{ped|chip}`, 
 - `npm run test:rules`: reglas de Firestore y Storage contra el emulador local. Requiere Java y usa el proyecto `demo-petfile`, que no puede tocar producción.
 
 Los datos de licencia nuevos se guardan en `familyLicenses`, que solo lee el servidor. `scripts/migrate-license-fields.cjs` mueve los antiguos; solo cambia datos con `--apply`.
+
+## Versiones viejas y aviso de actualización
+
+- Toda escritura de una mascota lleva `wAt` (hora del servidor). La regla de `pets` rechaza las que no la traen, así una versión vieja de la app (abierta en segundo plano o con cambios en cola sin conexión) no puede reescribir el historial y borrar registros.
+- **Orden al publicar:** primero la web (envía `wAt`; las reglas actuales lo aceptan) y después las reglas. Si se publican las reglas antes, la web actual no puede guardar.
+- `public/version.json` y `APP_VERSION` en `public/app.js` deben coincidir (hay una prueba). Al publicar una versión nueva, cambiar los dos: la web que esté abierta avisa con **Actualizar** o recarga sola al volver a la app si no hay un formulario abierto.

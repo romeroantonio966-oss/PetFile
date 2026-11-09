@@ -283,13 +283,16 @@ const petBytes=id=>fb.rawSize[id]||0;
 function spaceText(bytes){const pct=Math.min(100,Math.round(bytes/DOC_LIMIT*100)),left=Math.max(0,Math.floor((DOC_LIMIT-bytes)/ENTRY_AVG));return {pct,html:`<div class="space${pct>=80?' warn':''}"><div class="space-bar"><span style="width:${Math.max(2,pct)}%"></span></div><div class="space-t">${t('sp_used',pct,left.toLocaleString(lang==='en'?'en-US':'es-CR'))}</div>${pct>=80?`<div class="space-w">${t('sp_warn')}</div>`:''}</div>`}}
 const plain=x=>JSON.parse(JSON.stringify(x));
 const sameVal=(a,b)=>JSON.stringify(a===undefined?null:a)===JSON.stringify(b===undefined?null:b);
+/* Marca de escritura: toda escritura de una mascota lleva la hora del servidor. Las reglas rechazan las que no la traen,
+   así una versión vieja de la app (abierta en segundo plano o con cambios en cola sin conexión) no puede reescribir el historial. */
+const wTag=()=>({wAt:FV().serverTimestamp()});
 /* Mascota nueva: documento completo. Mascota existente: solo los datos que cambiaron; el historial nunca se reescribe aquí. */
 function savePet(pet,base){
-  if(!base){const s=stamp();if(s)Object.assign(pet,{modBy:s.n,modUid:s.u,modAt:s.at});state.pets[pet.id]=pet;render();if(fb.petsCol)fb.petsCol.doc(pet.id).set(plain(pet)).catch(cloudErr);return}
-  const patch={};Object.keys(pet).forEach(k=>{if(k!=='id'&&k!=='entries'&&k!=='deleted'&&!SIG_KEYS.includes(k)&&!sameVal(pet[k],base[k]))patch[k]=pet[k]});
+  if(!base){const s=stamp();if(s)Object.assign(pet,{modBy:s.n,modUid:s.u,modAt:s.at});state.pets[pet.id]=pet;render();if(fb.petsCol)fb.petsCol.doc(pet.id).set(Object.assign(plain(pet),wTag())).catch(cloudErr);return}
+  const patch={};Object.keys(pet).forEach(k=>{if(k!=='id'&&k!=='entries'&&k!=='deleted'&&k!=='wAt'&&!SIG_KEYS.includes(k)&&!sameVal(pet[k],base[k]))patch[k]=pet[k]});
   const s=stamp();if(s&&Object.keys(patch).length)Object.assign(patch,{modBy:s.n,modUid:s.u,modAt:s.at});
   state.pets[pet.id]=Object.assign({},state.pets[pet.id]||pet,patch);render();
-  if(fb.petsCol&&Object.keys(patch).length)fb.petsCol.doc(pet.id).update(plain(patch)).catch(cloudErr);
+  if(fb.petsCol&&Object.keys(patch).length)fb.petsCol.doc(pet.id).update(Object.assign(plain(patch),wTag())).catch(cloudErr);
 }
 /* Historial: cada cambio quita y agrega solo sus registros, en una operación atómica que Firestore
    combina en el servidor y deja en cola sin conexión. Así dos integrantes nunca se pisan el historial. */
@@ -309,9 +312,9 @@ function changeEntries(petId,dropIds,add,del){
   const ref=fb.petsCol.doc(petId),b=fdb.batch(),first={};
   if(remove.length)first.entries=FV().arrayRemove(...remove);
   if(drop.length)first.deleted=FV().arrayRemove(...drop);
-  if(Object.keys(first).length)b.update(ref,first);
-  if(add.length)b.update(ref,{entries:FV().arrayUnion(...add)});
-  if(del&&remove.length)b.update(ref,{deleted:FV().arrayUnion(del)});
+  if(Object.keys(first).length)b.update(ref,Object.assign(first,wTag()));
+  if(add.length)b.update(ref,Object.assign({entries:FV().arrayUnion(...add)},wTag()));
+  if(del&&remove.length)b.update(ref,Object.assign({deleted:FV().arrayUnion(del)},wTag()));
   b.commit().catch(cloudErr);
 }
 const addEntries=(petId,list)=>{const s=stamp();return changeEntries(petId,[],s?list.map(e=>Object.assign({},e,{addBy:s.n,addUid:s.u,addAt:s.at})):list)};
@@ -342,7 +345,7 @@ async function ensureOwnFamily(migrate){
     await b.commit();
   }
   if(migrate){ // pasar mascotas de la versión anterior (users/{uid}/pets)
-    try{const old=await userRef().collection('pets').get();for(const d of old.docs){await ref.collection('pets').doc(d.id).set(d.data())}}catch(e){console.warn('migración',e)}
+    try{const old=await userRef().collection('pets').get();for(const d of old.docs){await ref.collection('pets').doc(d.id).set(Object.assign(d.data(),wTag()))}}catch(e){console.warn('migración',e)}
   }
 }
 async function backToOwn(notify){
@@ -352,7 +355,7 @@ async function backToOwn(notify){
 }
 /* Lo que llega de la base puede haberlo escrito otra cuenta: los textos deben ser textos. */
 function cleanPet(d){
-  const o=Object.assign({},d);
+  const o=Object.assign({},d);delete o.wAt;
   ['name','species','speciesOther','sex','breed','birth','photo'].forEach(k=>{if(o[k]!=null&&typeof o[k]!=='string')delete o[k]});
   if(typeof o.weight==='number')o.weight=String(o.weight);else if(o.weight!=null&&typeof o.weight!=='string')delete o.weight;
   o.entries=(Array.isArray(o.entries)?o.entries:[]).filter(e=>e&&typeof e==='object'&&!Array.isArray(e)).map(e=>{
@@ -428,7 +431,7 @@ async function joinFamily(code,inv){
   await famRef(inv.familyId).update({members:FV().arrayUnion(uid),['memberInfo.'+uid]:{name:myName(),email:fb.user.email||''},joinCode:code});
   if(oldIsOwn&&mine.length&&(fb.fam&&(fb.fam.members||[]).length===1)){
     const dest=famRef(inv.familyId).collection('pets');
-    for(const p of mine){try{await dest.doc(p.id).set(JSON.parse(JSON.stringify(p)));await famRef(oldFid).collection('pets').doc(p.id).delete().catch(()=>{})}catch(e){console.warn(e)}}
+    for(const p of mine){try{await dest.doc(p.id).set(Object.assign(JSON.parse(JSON.stringify(p)),wTag()));await famRef(oldFid).collection('pets').doc(p.id).delete().catch(()=>{})}catch(e){console.warn(e)}}
   }
   if(!oldIsOwn){await famRef(oldFid).update({members:FV().arrayRemove(uid),['memberInfo.'+uid]:FV().delete()}).catch(e=>console.warn(e))}
   await userRef().update({familyId:inv.familyId});
@@ -582,7 +585,7 @@ function lockView(){
   <div style="display:flex;justify-content:center;gap:16px"><button class="lnk" data-act="account">${t('ac_t')}</button><button class="lnk" style="color:var(--muted)" data-act="logout">${t('ac_logout')}</button></div>${arcaBadge()}</div></div>`;
 }
 function render(){
-  ntQueue();
+  ntQueue();try{if(upd.ready)updBanner()}catch(e){}
   document.documentElement.lang=lang;
   document.querySelectorAll('.lang button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===lang));
   const app=$('#app'),acct=$('#acct'),lock=$('#lock');
@@ -1493,5 +1496,29 @@ document.addEventListener('click',ev=>{
 });
 document.addEventListener('change',ev=>{if(ev.target.id==='rxfile'){const f=ev.target.files[0];const p=state.pets[state.view.id];if(f&&p)readRx(p,f);ev.target.value=''}});
 document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&$('#layer').innerHTML)closeSheet()});
+/* Versión nueva: la web revisa version.json al abrir, al volver a la app y cada 15 minutos. Si hay otra versión,
+   recarga sola al volver a la app (si no hay un formulario abierto) o muestra un aviso con el botón Actualizar.
+   APP_VERSION y public/version.json deben coincidir: una prueba lo comprueba. La app nativa se actualiza por la tienda. */
+const APP_VERSION='2026-11-09.1';
+Object.assign(S.es,{upd_t:'Hay una versión nueva de PETFILE.',upd_b:'Actualizar'});
+Object.assign(S.en,{upd_t:'A new version of PETFILE is available.',upd_b:'Update'});
+const upd={ready:false,busy:false};
+function updBanner(){
+  let el=document.getElementById('upd');
+  if(!upd.ready){if(el)el.remove();return}
+  if(!el){el=document.createElement('div');el.id='upd';el.className='upd';el.setAttribute('role','status');document.body.appendChild(el)}
+  el.innerHTML=`<span>${esc(t('upd_t'))}</span><button type="button" class="btn">${esc(t('upd_b'))}</button>`;
+  el.querySelector('button').onclick=()=>location.reload();
+}
+async function checkUpdate(fromReturn){
+  if(NATIVE||upd.busy)return;upd.busy=true;
+  try{const r=await fetch('version.json',{cache:'no-store'});if(r.ok){const v=String((await r.json()).v||'');if(v&&v!==APP_VERSION){
+    if(fromReturn&&!$('#layer').innerHTML){location.reload();return}
+    upd.ready=true;updBanner()}}}catch(e){}finally{upd.busy=false}
+}
+if(!NATIVE){
+  checkUpdate(false);setInterval(()=>{if(!document.hidden)checkUpdate(false)},15*60*1000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate(true)});
+}
 fromHash();connect();
 })();
