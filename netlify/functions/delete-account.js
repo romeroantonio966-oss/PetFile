@@ -70,5 +70,17 @@ const run = async (event) => {
 };
 
 exports.handler = async (event) => {
-  try { return await run(event); } catch (e) { console.error(e); return json(500, { error: 'server' }); }
+  const origin = event.headers?.origin || event.headers?.Origin || '';
+  const allowed = ['capacitor://localhost', 'http://localhost', 'https://localhost', 'https://petfilearca.netlify.app'];
+  const headers = {
+    'Access-Control-Allow-Origin': allowed.includes(origin) ? origin : 'https://petfilearca.netlify.app',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Vary': 'Origin'
+  };
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
+  let response;
+  try { response = await run(event); }
+  catch (e) { console.error(e); response = json(500, { error: 'server' }); }
+  return { ...response, headers: { ...response.headers, ...headers } };
 };
