@@ -70,7 +70,49 @@ for (const u of ['https://web.push.apple.com/x', 'https://updates.push.services.
 
 // ---------- autorización y errores en todas las funciones
 const allFns = ['activate', 'delete-account', 'lemon-webhook', 'fs-photo'];
-for (const n of allFns) { test(`${n}: GET/OPTIONS/PUT no autorizan operaciones`, async () => { store = { 'users/u1': { familyId: 'u1' }, 'families/u1': { members: ['u1'] } }; upstream('image/jpeg'); for (const m of n === 'fs-photo' ? ['PUT', 'DELETE', 'OPTIONS'] : ['GET', 'PUT', 'DELETE', 'OPTIONS']) { const r = await F(n)({ httpMethod: m, headers: { authorization: 'Bearer ok-u1' }, body: '{}', queryStringParameters: {} }); assert.strictEqual(r.statusCode, 405, m); } assert.ok(store['users/u1'], 'nada se borró'); }); }
+for (const n of allFns) { test(`${n}: GET/OPTIONS/PUT no autorizan operaciones`, async () => { store = { 'users/u1': { familyId: 'u1' }, 'families/u1': { members: ['u1'] } }; upstream('image/jpeg'); for (const m of n === 'fs-photo' ? ['PUT', 'DELETE', 'OPTIONS'] : ['GET', 'PUT', 'DELETE', 'OPTIONS']) { const r = await F(n)({ httpMethod: m, headers: { authorization: 'Bearer ok-u1', origin: 'https://localhost' }, body: '{}', queryStringParameters: {} }); const expect = n === 'delete-account' && m === 'OPTIONS' ? 204 : 405; assert.strictEqual(r.statusCode, expect, m); if (n === 'delete-account' && m === 'OPTIONS') { assert.strictEqual(r.headers['Access-Control-Allow-Origin'], 'https://localhost'); assert.ok(String(r.headers['Access-Control-Allow-Methods'] || '').includes('POST')); assert.ok(String(r.headers['Access-Control-Allow-Headers'] || '').includes('Authorization')); } } assert.ok(store['users/u1'], 'nada se borró'); }); }
+
+// ---------- solicitud pública de eliminación (nunca borra)
+const RD = (body, over = {}) => F('request-delete-account')(Object.assign({ httpMethod: 'POST', headers: { 'content-type': 'application/json', 'x-nf-client-connection-ip': '203.0.113.10' }, body: JSON.stringify(body) }, over));
+test('Solicitud pública: OPTIONS permitido y GET no borra', async () => {
+  store = { 'users/u1': { familyId: 'u1' } };
+  const opt = await F('request-delete-account')({ httpMethod: 'OPTIONS', headers: {} });
+  assert.strictEqual(opt.statusCode, 204);
+  assert.strictEqual((await F('request-delete-account')({ httpMethod: 'GET', headers: {} })).statusCode, 405);
+  assert.ok(store['users/u1']);
+});
+test('Solicitud pública: sin confirmación o correo inválido no envía ni borra', async () => {
+  store = { 'users/a': { familyId: 'a' } }; global.__u = []; global.fetch = async () => { throw new Error('no debía llamarse'); };
+  assert.strictEqual((await RD({ email: 'a@b.co' })).statusCode, 400);
+  assert.strictEqual((await RD({ email: 'no-es-correo', confirm: true })).statusCode, 400);
+  assert.ok(store['users/a']);
+});
+test('Solicitud pública: honeypot responde ok sin borrar ni avisar', async () => {
+  store = { 'users/a': { familyId: 'a' } }; let called = 0; global.fetch = async () => { called++; return { ok: true, json: async () => ({ success: 'true' }) }; };
+  const r = await RD({ email: 'a@b.co', confirm: true, website: 'http://spam' });
+  assert.strictEqual(r.statusCode, 200);
+  assert.strictEqual(JSON.parse(r.body).deleted, false);
+  assert.strictEqual(called, 0);
+  assert.ok(store['users/a']);
+});
+test('Solicitud pública: envía al canal admin y no elimina la cuenta', async () => {
+  store = { 'users/a': { familyId: 'a' } }; const sent = [];
+  const origAuth = admin.auth;
+  global.fetch = async (u, o) => { sent.push({ u, o }); return { ok: true, json: async () => ({ success: 'true' }) }; };
+  admin.auth = () => ({ verifyIdToken: async (t) => { if (!/^ok-/.test(t)) throw new Error('bad'); return { uid: t.slice(3) }; }, deleteUser: async () => { throw new Error('no borrar'); }, getUserByEmail: async () => ({ uid: 'a' }) });
+  try {
+    const r = await RD({ email: 'titular@example.com', confirm: true, note: 'No puedo entrar', lang: 'es' });
+    assert.strictEqual(r.statusCode, 200);
+    const j = JSON.parse(r.body);
+    assert.strictEqual(j.ok, true);
+    assert.strictEqual(j.deleted, false);
+    assert.ok(sent[0].u.includes('formsubmit.co'));
+    const payload = JSON.parse(sent[0].o.body);
+    assert.match(payload._subject, /eliminaci/i);
+    assert.match(payload.message, /NO elimina/i);
+    assert.ok(store['users/a'], 'Firestore intacto');
+  } finally { admin.auth = origAuth; }
+});
 test('Sin token: activar y eliminar no hacen nada', async () => { store = { 'users/u1': { familyId: 'u1' }, 'families/u1': { members: ['u1'] } }; const snapshot = JSON.stringify(store); for (const h of [{}, { authorization: '' }, { authorization: 'Bearer ' }, { authorization: 'Basic ok-u1' }]) { assert.strictEqual((await F('activate')({ httpMethod: 'POST', headers: h, body: '{"key":"abcdefgh"}' })).statusCode, 401); assert.strictEqual((await F('delete-account')({ httpMethod: 'POST', headers: h, body: '{}' })).statusCode, 401); } assert.strictEqual(JSON.stringify(store), snapshot); });
 test('Eliminar solo afecta a quien tiene el token, aunque el cuerpo pida otra cuenta', async () => { store = { 'users/a': { familyId: 'a' }, 'families/a': { members: ['a'], owner: 'a' }, 'users/b': { familyId: 'b' }, 'families/b': { members: ['b'], owner: 'b' } }; await F('delete-account')({ httpMethod: 'POST', headers: { authorization: 'Bearer ok-a' }, body: JSON.stringify({ uid: 'b' }) }); assert.ok(store['users/b'] && store['families/b']); assert.ok(!store['users/a']); });
 test('Activar: no se puede activar la familia de otra persona con el cuerpo', async () => { store = { 'users/u1': { familyId: 'u1' }, 'families/u1': { members: ['u1'] }, 'families/x': { members: ['x'] } }; lemon({ license_key: { status: 'active' }, meta: { store_id: 7 }, activated: true }); await F('activate')({ httpMethod: 'POST', headers: { authorization: 'Bearer ok-u1' }, body: JSON.stringify({ key: 'goodkey123', familyId: 'x' }) }); assert.ok(!store['families/x'].paidUntil); });

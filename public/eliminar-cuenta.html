@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Eliminación de cuenta y datos · PETFILE</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="theme-color" content="#F4F5F7">
+<meta name="description" content="Cómo solicitar la eliminación de tu cuenta y datos personales en PETFILE.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="legal.css">
+</head>
+<body class="pf-brand"><main>
+<div class="top">
+  <a class="brand" href="./"><img src="icon-192.png" width="40" height="40" alt=""><span>PETFILE</span></a>
+  <div class="lang"><a href="#es">ES</a><a href="#en">EN</a></div>
+</div>
+
+<section id="es" class="card">
+<h1>Eliminación de cuenta y datos — PETFILE</h1>
+<p class="fecha">Última actualización: 10 de noviembre de 2026</p>
+<p>En PETFILE podés solicitar la eliminación de tu cuenta y de tus datos personales, de acuerdo con la Ley 8968 de Costa Rica y con los requisitos de las tiendas de aplicaciones. Hay dos formas de hacerlo.</p>
+
+<h2>Opción 1: Desde la aplicación</h2>
+<p>Si podés entrar a tu cuenta, este es el método más rápido. La eliminación la ejecutás vos mismo y es inmediata al confirmar:</p>
+<ol class="steps">
+  <li>Iniciá sesión en PETFILE con tu correo y contraseña.</li>
+  <li>Tocá el círculo con tu inicial, arriba a la derecha, para abrir <b>Mi cuenta</b>.</li>
+  <li>Desplazate hasta el final y tocá <b>Eliminar mi cuenta</b>.</li>
+  <li>Leé el aviso, escribí <b>ELIMINAR</b> para confirmar y tocá <b>Eliminar para siempre</b>.</li>
+</ol>
+<p class="tip"><b>Importante:</b> al eliminar la cuenta desde la app, si pagaste Premium la licencia se pierde y no se reembolsa después del plazo de reembolso.</p>
+
+<h2>Opción 2: Solicitud desde esta página</h2>
+<p>Si no podés usar la app, podés pedir la eliminación aquí. <b>Enviar este formulario no borra la cuenta al instante.</b> Solo registra una solicitud. Para impedir que alguien elimine la cuenta de otra persona con solo conocer el correo, verificamos la titularidad antes de borrar nada: te escribimos a ese mismo correo y solo avanzamos cuando confirmás que sos el titular.</p>
+<p>Plazo de respuesta: máximo <b>5 días hábiles</b>, igual que en nuestra <a href="privacidad.html">política de privacidad</a>.</p>
+
+<form class="del-form form" data-lang="es" novalidate>
+  <label for="del-email">Correo de la cuenta PETFILE
+    <input id="del-email" name="email" type="email" autocomplete="email" maxlength="254" required placeholder="tu@correo.com">
+  </label>
+  <label for="del-note">Nota opcional (por ejemplo, por qué no podés entrar a la app)
+    <textarea id="del-note" name="note" maxlength="500" placeholder="Opcional"></textarea>
+  </label>
+  <label class="check"><input id="del-confirm" type="checkbox" required> Confirmo que soy la persona titular de esta cuenta y solicito su eliminación.</label>
+  <input class="hp" id="del-hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+  <div class="err" role="alert" hidden></div>
+  <div class="ok" role="status" hidden></div>
+  <button class="btn" type="submit">Enviar solicitud</button>
+</form>
+<p class="tip">También podés escribirnos directamente a <a data-correo href="#"></a> con el asunto “Eliminar cuenta PETFILE”. El proceso de verificación es el mismo.</p>
+
+<h2>Qué se elimina</h2>
+<p>Cuando la eliminación se completa (desde la app o tras verificar una solicitud), el sistema hace lo siguiente según tu situación:</p>
+<ul>
+  <li><b>Siempre:</b> se borra tu perfil de usuario, tus suscripciones de notificaciones asociadas a la cuenta y tu acceso (Firebase Authentication: correo/contraseña).</li>
+  <li><b>Si estás solo en tu familia:</b> también se borran la familia, las mascotas, el historial (vacunas, desparasitaciones, citas, medicamentos, consultas, notas), las recetas con foto, los certificados adjuntos vinculados a esa familia, el código de invitación y los datos de licencia guardados en PETFILE. Las fotos de los registros en Firebase Storage se intentan borrar junto con esa familia.</li>
+  <li><b>Si hay más personas en tu familia y sos administrador:</b> salís de la familia; las mascotas, historiales y fotos compartidas <b>quedan con la familia</b>; la siguiente persona pasa a ser administradora. Tu correo se quita de los datos de miembros y de la licencia visible de la familia.</li>
+  <li><b>Si sos integrante (no administrador) de una familia:</b> salís de esa familia. Las mascotas e historiales compartidos <b>permanecen con la familia</b>.</li>
+</ul>
+
+<h2>Qué se conserva</h2>
+<ul>
+  <li><b>Datos de familia compartida:</b> mascotas, historial, recetas y fotos que siguen perteneciendo a otras personas de la familia no se borran al eliminar tu cuenta.</li>
+  <li><b>Solicitudes y correos administrativos:</b> el pedido que envías por este formulario (y respuestas por correo) puede quedar en el buzón de soporte el tiempo necesario para atenderlo y demostrar que cumplimos el proceso (en la práctica, mientras haga falta para la gestión, alineado al plazo de atención de 5 días hábiles y a posibles requerimientos legales posteriores).</li>
+  <li><b>Pagos:</b> Lemon Squeezy procesa el pago. PETFILE no guarda datos de tarjetas. El historial de compra en Lemon Squeezy se rige por su propia política; al borrar tu cuenta en PETFILE no prometemos borrar registros del procesador de pagos.</li>
+  <li><b>Registros técnicos temporales:</b> registros de servidor (por ejemplo Netlify) pueden existir por poco tiempo por operación y seguridad, sin usarse como perfil de usuario.</li>
+</ul>
+<p>No prometemos la eliminación de información que el sistema todavía no borra de forma automática (por ejemplo, una falla puntual al borrar archivos en Storage se revisa de forma manual si nos avisás).</p>
+
+<h2>Seguridad de esta página</h2>
+<ul>
+  <li>No pedimos tu contraseña en este formulario.</li>
+  <li>Este formulario <b>no ejecuta</b> la eliminación: solo crea una solicitud.</li>
+  <li>No mostramos si un correo tiene o no cuenta en PETFILE.</li>
+  <li>Hay límites para reducir envíos automáticos abusivos.</li>
+</ul>
+<p>Más detalle en la <a href="privacidad.html">política de privacidad</a> y los <a href="terminos.html">términos de uso</a>.</p>
+</section>
+
+<hr>
+
+<section id="en" class="card" lang="en">
+<h1>Account and data deletion — PETFILE</h1>
+<p class="fecha">Last updated: November 10, 2026</p>
+<p>In PETFILE you can request deletion of your account and personal data, under Costa Rica's Law 8968 and app store requirements. There are two ways to do it.</p>
+
+<h2>Option 1: From the app</h2>
+<p>If you can sign in, this is the fastest method. You run the deletion yourself and it takes effect when you confirm:</p>
+<ol class="steps">
+  <li>Sign in to PETFILE with your email and password.</li>
+  <li>Tap the circle with your initial at the top right to open <b>My account</b>.</li>
+  <li>Scroll to the bottom and tap <b>Delete my account</b>.</li>
+  <li>Read the notice, type <b>DELETE</b> to confirm, then tap <b>Delete forever</b>.</li>
+</ol>
+<p class="tip"><b>Important:</b> if you paid for Premium, the license is lost when you delete the account and is not refunded after the refund period.</p>
+
+<h2>Option 2: Request from this page</h2>
+<p>If you cannot use the app, you can request deletion here. <b>Submitting this form does not delete the account immediately.</b> It only registers a request. To stop someone from deleting another person's account just by knowing the email, we verify ownership before deleting anything: we write to that same email and only proceed after you confirm you are the account holder.</p>
+<p>Response time: up to <b>5 business days</b>, as in our <a href="privacidad.html#en">privacy policy</a>.</p>
+
+<form class="del-form form" data-lang="en" novalidate>
+  <label for="del-email-en">PETFILE account email
+    <input id="del-email-en" name="email" type="email" autocomplete="email" maxlength="254" required placeholder="you@email.com">
+  </label>
+  <label for="del-note-en">Optional note (for example, why you cannot open the app)
+    <textarea id="del-note-en" name="note" maxlength="500" placeholder="Optional"></textarea>
+  </label>
+  <label class="check"><input id="del-confirm-en" type="checkbox" required> I confirm I am the holder of this account and I request its deletion.</label>
+  <input class="hp" id="del-hp-en" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+  <div class="err" role="alert" hidden></div>
+  <div class="ok" role="status" hidden></div>
+  <button class="btn" type="submit">Send request</button>
+</form>
+<p class="tip">You can also email <a data-correo href="#"></a> with the subject “Delete PETFILE account”. The verification process is the same.</p>
+
+<h2>What is deleted</h2>
+<p>When deletion completes (from the app or after a verified request), the system does the following depending on your situation:</p>
+<ul>
+  <li><b>Always:</b> your user profile, notification subscriptions tied to the account, and sign-in access (Firebase Authentication) are deleted.</li>
+  <li><b>If you are alone in your family:</b> the family, pets, medical history, prescription photos, attached certificates for that family, invite code and license data stored in PETFILE are deleted too. Record photos in Firebase Storage are deleted with that family when possible.</li>
+  <li><b>If other people remain in your family and you are the admin:</b> you leave the family; shared pets, histories and photos <b>stay with the family</b>; the next person becomes admin. Your email is removed from member info and from the family's visible license email.</li>
+  <li><b>If you are a member (not admin):</b> you leave that family. Shared pets and histories <b>remain with the family</b>.</li>
+</ul>
+
+<h2>What is retained</h2>
+<ul>
+  <li><b>Shared family data:</b> pets, history, prescriptions and photos that still belong to other family members are not deleted when your account is removed.</li>
+  <li><b>Administrative requests and email:</b> this form request (and email replies) may stay in the support inbox as needed to handle the case and show we followed the process.</li>
+  <li><b>Payments:</b> Lemon Squeezy processes payment. PETFILE never stores card data. Purchase records at Lemon Squeezy follow their policy; deleting your PETFILE account does not promise deletion of the payment processor's records.</li>
+  <li><b>Short-lived technical logs:</b> server logs (for example Netlify) may exist briefly for operations and security.</li>
+</ul>
+
+<h2>Security on this page</h2>
+<ul>
+  <li>We do not ask for your password on this form.</li>
+  <li>This form <b>does not run</b> deletion: it only creates a request.</li>
+  <li>We do not reveal whether an email has a PETFILE account.</li>
+  <li>Limits reduce automated abuse.</li>
+</ul>
+<p>See the <a href="privacidad.html#en">privacy policy</a> and <a href="terminos.html#en">terms of use</a> for more detail.</p>
+</section>
+
+<p class="pie">© 2026 Grupo ARCA · <a href="privacidad.html">Privacidad</a> · <a href="terminos.html">Términos</a></p>
+<script src="legal.js"></script>
+<script src="eliminar-cuenta.js"></script>
+</main></body>
+</html>
